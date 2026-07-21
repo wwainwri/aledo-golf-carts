@@ -1,0 +1,22 @@
+# Aledo Golf Carts — 301 redirects (Apache version)
+# Only needed if hosting on Apache: rename this file to .htaccess
+# at the site root. On Netlify/Cloudflare Pages, the _redirects
+# file is used instead and this file can be ignored.
+
+RewriteEngine On
+
+RewriteRule ^golf-carts-for-sale/?$ /inventory.html [R=301,L]
+RewriteRule ^golf\+cart-for-sale/?$ /inventory.html [R=301,L]
+RewriteRule ^cars-for-sale/?$ /inventory.html [R=301,L]
+RewriteRule ^[Ii]nventory/[Dd]etails/.*$ /inventory.html [R=301,L]
+RewriteRule ^finance/?$ /service-financing.html [R=301,L]
+RewriteRule ^service-department/?$ /service-financing.html [R=301,L]
+RewriteRule ^service-request/?$ /service-financing.html [R=301,L]
+RewriteRule ^lithium-battery/?$ /parts.html [R=301,L]
+RewriteRule ^schedule-test-drive/?$ /contact.html [R=301,L]
+RewriteRule ^contact-us/?$ /contact.html [R=301,L]
+RewriteRule ^about-us/?$ /index.html [R=301,L]
+RewriteRule ^terms-and-conditions/?$ /terms.html [R=301,L]
+RewriteRule ^privacy-policy/?$ /privacy.html [R=301,L]
+
+ErrorDocument 404 /404.html

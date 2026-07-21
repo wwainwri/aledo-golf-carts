@@ -1,0 +1,38 @@
+# ═══════════════════════════════════════════════════════════
+# Aledo Golf Carts — 301 redirects
+# Old Carsforsale-platform URLs → new site URLs
+#
+# Netlify/Cloudflare Pages format: this file deploys as-is at the
+# site root. On Apache hosting, use the equivalent rules in
+# redirects.htaccess instead.
+# ═══════════════════════════════════════════════════════════
+
+# --- Inventory listing pages ---
+/golf-carts-for-sale        /inventory.html                301
+/golf+cart-for-sale         /inventory.html                301
+/cars-for-sale              /inventory.html                301
+
+# --- Individual cart detail pages (GUID URLs) ---
+/Inventory/Details/*        /inventory.html                301
+/inventory/details/*        /inventory.html                301
+
+# --- Financing ---
+/finance                    /service-financing.html        301
+
+# --- Service ---
+/service-department         /service-financing.html        301
+/service-request            /service-financing.html        301
+
+# --- Lithium battery page ---
+/lithium-battery            /parts.html                    301
+
+# --- Contact / test drive ---
+/schedule-test-drive        /contact.html                  301
+/contact-us                 /contact.html                  301
+
+# --- About ---
+/about-us                   /index.html                    301
+
+# --- Legal ---
+/terms-and-conditions       /terms.html                    301
+/privacy-policy             /privacy.html                  301
