@@ -129,6 +129,37 @@
   }
   .hero-scene { position: absolute; inset: 0; z-index: 0; }
   .hero-scene video { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+  /* ── YouTube hero layer ──
+     Sits on top of the local video and fades in only once it is
+     genuinely playing, so a blocked or slow embed degrades to the
+     local clip rather than to an empty box.
+
+     An iframe ignores object-fit, and CSS cannot size a width from
+     a parent's height, so the 16:9 cover crop is measured in the
+     script at the foot of the page. These rules only centre it.
+
+     The fade is not decoration. It is drawn across every jump in
+     the film so that YouTube's own title bar, which reappears for
+     a second or two after any jump, is never on screen. */
+  .hero-yt {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 400ms ease;
+    pointer-events: none; /* the hero buttons stay clickable */
+  }
+  .hero-yt.is-live { opacity: 1; }
+  .hero-yt iframe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
   .hero-scrim {
     position: absolute;
     inset: 0;
@@ -193,9 +224,13 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-scene">
-    <video autoplay muted loop playsinline preload="metadata">
+    <!-- Backup only. It is not set to autoplay and preloads nothing, so on a
+         normal visit these 3MB are never downloaded. The script at the foot of
+         the page starts it only if the YouTube embed fails to play. -->
+    <video id="hero-fallback" muted loop playsinline preload="none">
       <source src="assets/hero-video.mp4" type="video/mp4" />
     </video>
+    <div class="hero-yt" id="hero-yt"><div id="hero-yt-player"></div></div>
   </div>
   <div class="hero-scrim"></div>
 
@@ -714,6 +749,173 @@
       `;
     },
   };
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HERO VIDEO — Madjax "The Art of Arrival"
+
+     Plays the manufacturer's own film behind the headline, cut down
+     to the footage alone. Three stretches are left out, because all
+     three put the word MADJAX on screen:
+
+         0:00–0:08   headlights, then the MADJAX ASCENT card
+         0:57–1:03   close-ups of the MADJAX badge and tailgate
+         1:57–2:04   headlights, then the card again
+
+     What is left runs 0:08 to 0:57 and 1:03 to 1:57, silent, on a
+     loop. Four things here are not obvious, and all four came out
+     of testing rather than guesswork:
+
+     1. YouTube's own loop setting cannot do this. Asked to loop a
+        trimmed clip it obeys the end point but restarts from 0:00,
+        so the opening logo card returns every time round. The loop
+        is therefore driven here, on a timer.
+
+     2. YouTube redraws its title bar — "MADJAX® Ascent" and the
+        channel name — for a second or two after any jump. So the
+        picture is faded down before each jump and back up after it.
+        The dip doubles as a clean transition.
+
+     3. That title bar sits in the top slice of the player, so the
+        frame is deliberately sized larger than the hero and the
+        overspill cropped away. On a wide screen the cover crop
+        already does this; OVERSCAN covers tall, narrow screens.
+
+     4. Nothing loads until the rest of the page has finished, and
+        the player only appears once it is genuinely playing. If a
+        visitor blocks YouTube, or their phone refuses to autoplay,
+        assets/hero-video.mp4 starts instead and they see the old
+        hero exactly as before.
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  var VIDEO_ID  = 'dsp5VC3PNTE';
+  var START     = 8;      /* first frame after the opening card */
+  var END       = 117;    /* last frame before the closing card */
+  var SKIP_FROM = 57.5;   /* the MADJAX badge close-ups begin here */
+  var SKIP_TO   = 63.2;   /* and the picture is clean again here   */
+  var OVERSCAN  = 1.3;    /* extra height, so the title bar is cropped off */
+
+  var shell = document.getElementById('hero-yt');
+  var fallback = document.getElementById('hero-fallback');
+  if (!shell) return;
+
+  var player = null;
+  var ticker = null;
+  var playing = false;
+  var jumping = false;
+
+  /* Some people set their device to reduce motion because movement
+     makes them ill, and a full-screen looping film is exactly what
+     that setting is meant to stop. Leave the gradient, load nothing. */
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  function playLocalInstead() {
+    if (playing || !fallback) return;
+    var attempt = fallback.play();
+    if (attempt && attempt['catch']) attempt['catch'](function () { /* gradient it is */ });
+  }
+
+  /* Fill the hero with a 16:9 frame and crop whatever spills out.
+     The OVERSCAN on the height is what pushes YouTube's title bar
+     up past the top edge on narrow screens. */
+  function fit() {
+    var frame = shell.querySelector('iframe');
+    if (!frame) return;
+    var w = shell.offsetWidth;
+    var h = shell.offsetHeight;
+    if (!w || !h) return;
+    var unit = Math.max(w / 16, (h * OVERSCAN) / 9);
+    frame.style.width = (unit * 16) + 'px';
+    frame.style.height = (unit * 9) + 'px';
+  }
+
+  function watchSize() {
+    if (window.ResizeObserver) new window.ResizeObserver(fit).observe(shell);
+    else window.addEventListener('resize', fit);
+  }
+
+  /* Every cut in the film happens behind a fade, because the player
+     redraws its own title bar for a moment after each one. */
+  function jumpTo(seconds) {
+    if (jumping || !player) return;
+    jumping = true;
+    shell.classList.remove('is-live');
+
+    window.setTimeout(function () {
+      player.seekTo(seconds, true);
+      player.playVideo();
+      window.setTimeout(function () {
+        shell.classList.add('is-live');
+        jumping = false;
+      }, 1000);
+    }, 420);
+  }
+
+  /* Watched seven times a second, close enough that no frame of the
+     skipped stretches ever reaches the screen. */
+  function startTicker() {
+    if (ticker) return;
+    ticker = window.setInterval(function () {
+      if (jumping || !player || !player.getCurrentTime) return;
+      var at = player.getCurrentTime();
+      if (at >= END || at < START - 1) jumpTo(START);             /* round again */
+      else if (at >= SKIP_FROM && at < SKIP_TO) jumpTo(SKIP_TO);  /* past the badges */
+    }, 150);
+  }
+
+  function onStateChange(event) {
+    if (event.data === window.YT.PlayerState.PLAYING && !playing) {
+      playing = true;
+      fit();
+      watchSize();
+      startTicker();
+      if (fallback) fallback.remove(); /* YouTube is up; the backup is dead weight */
+      /* A short beat before revealing it, in case the player is still
+         drawing its title bar over the opening frames. */
+      window.setTimeout(function () { shell.classList.add('is-live'); }, 500);
+    }
+    if (event.data === window.YT.PlayerState.ENDED) jumpTo(START);
+  }
+
+  window.onYouTubeIframeAPIReady = function () {
+    player = new window.YT.Player('hero-yt-player', {
+      videoId: VIDEO_ID,
+      host: 'https://www.youtube-nocookie.com', /* no tracking cookie */
+      playerVars: {
+        autoplay: 1,
+        mute: 1,              /* required for autoplay, and what was asked for */
+        controls: 0,          /* it is scenery, not a player */
+        playsinline: 1,       /* stops iPhones going full screen */
+        start: START,
+        disablekb: 1,
+        fs: 0,
+        rel: 0,               /* no "watch next" thumbnails */
+        modestbranding: 1,
+        iv_load_policy: 3     /* no annotation overlays */
+      },
+      events: {
+        onReady: function (e) { e.target.mute(); e.target.playVideo(); },
+        onStateChange: onStateChange,
+        onError: playLocalInstead
+      }
+    });
+  };
+
+  function loadPlayer() {
+    var tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    tag.async = true;
+    tag.onerror = playLocalInstead;
+    document.head.appendChild(tag);
+    window.setTimeout(playLocalInstead, 5000); /* stop waiting after five seconds */
+  }
+
+  /* Wait for the page to settle, so the embed never competes with the
+     headline, the logo, or the inventory feed for bandwidth. */
+  if (document.readyState === 'complete') loadPlayer();
+  else window.addEventListener('load', loadPlayer);
+})();
 </script>
 
 </body>
