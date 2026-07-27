@@ -790,10 +790,14 @@
 <script>
 (function () {
   var VIDEO_ID  = 'dsp5VC3PNTE';
+  /* These two leave-points are set roughly half a second before the
+     branding actually appears, because the fade takes 400ms to reach
+     black and the picture is still on screen while it runs. Cutting
+     at the exact frame let a frame or two of it through in testing. */
   var START     = 8;      /* first frame after the opening card */
-  var END       = 117;    /* last frame before the closing card */
-  var SKIP_FROM = 57.5;   /* the MADJAX badge close-ups begin here */
-  var SKIP_TO   = 63.2;   /* and the picture is clean again here   */
+  var END       = 116.5;  /* branding returns at ~117.5 */
+  var SKIP_FROM = 57;     /* the MADJAX badge close-ups begin at ~59 */
+  var SKIP_TO   = 63.2;   /* and the picture is clean again here */
   var OVERSCAN  = 1.3;    /* extra height, so the title bar is cropped off */
 
   var shell = document.getElementById('hero-yt');
