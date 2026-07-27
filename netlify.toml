@@ -1,0 +1,25 @@
+# ═══════════════════════════════════════════════════════════
+# ALEDO GOLF CARTS — Netlify configuration
+#
+# The site itself is plain static files at the repository root,
+# so there is no build step. The only moving part is the
+# inventory function, which reads Airtable server-side.
+#
+# Required environment variable (Netlify → Site configuration →
+# Environment variables):
+#
+#   AIRTABLE_TOKEN   a Personal Access Token scoped to
+#                    data.records:read on the Aledo Golf Carts base
+#
+# Optional overrides, only needed if the base is rebuilt:
+#   AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID, AIRTABLE_VIEW_ID
+# ═══════════════════════════════════════════════════════════
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# The /api/inventory path is declared inside the function itself
+# (netlify/functions/inventory.mjs) using the Functions v2 config
+# export, so no redirect rule is needed here. Legacy redirects for
+# old Carsforsale URLs continue to live in _redirects.

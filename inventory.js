@@ -1,35 +1,39 @@
 /* ═══════════════════════════════════════════════════════════
-   ALEDO GOLF CARTS — Google Sheets inventory loader
+   ALEDO GOLF CARTS — Airtable inventory loader
 
-   HOW TO CONNECT YOUR SHEET (one-time setup, ~2 minutes):
-   1. Open your inventory Google Sheet.
-   2. Click Share → General access → "Anyone with the link" → Viewer.
-   3. Copy the sheet's URL from your browser address bar.
-   4. Paste it between the quotes in AGC_SHEET_URL below.
+   Inventory lives in the "Inventory Items" table of the Aledo Golf
+   Carts Airtable base. Add a record → the cart appears here. Set
+   Status to Sold → the site shows it sold. No code, no uploads.
 
-   The first row of the sheet must be headers. Recognized columns
-   (capitalization doesn't matter, extra columns are ignored):
+   This file does NOT talk to Airtable directly, on purpose:
+   Airtable requires a token for every read, and a token in
+   front-end JavaScript would be readable by anyone — including a
+   token that opens the Leads table full of customer phone numbers.
+   Instead it reads /api/inventory, a small server-side function
+   (netlify/functions/inventory.mjs) that holds the token safely and
+   is cached by the CDN so we stay under Airtable's rate limit.
 
-   Name | Year | Price | Seats | Type | Battery | Color | Description | Photos | Status | Featured
+   Fields the endpoint returns for each cart:
 
-   - Name:        e.g. "Madjax Ascent"  (required — rows without a name are skipped)
-   - Year:        e.g. 2026
-   - Price:       a number like 12995, or text like "Call for pricing"
-   - Seats:       2, 4, or 6
-   - Type:        New or Used
-   - Battery:     e.g. Lithium, Lead-Acid, Gas
-   - Color:       e.g. Matte Black
-   - Description: one or two sentences shown on the card
-   - Photos:      one or more image links, separated by commas or new lines.
-                  Google Drive share links work — right-click the image in
-                  Drive → Share → "Anyone with the link" → copy link, paste it here.
-   - Status:      Available (default), Pending, Sold, or Hide
-   - Featured:    Yes to show the cart on the homepage
+     name         "Madjax Ascent"   (required — records with no name are skipped)
+     year         "2026"
+     price        "12995", or text like "Call for pricing"
+     seats        "2", "4", "6"
+     type         "New" or "Used"
+     battery      "Lithium", "Lead-Acid", "Gas"
+     color        "Matte Black"
+     description  one or two sentences shown on the card
+     photos       array of image links
+     status       "available", "pending", or "sold"
+     featured     true to show the cart on the homepage
 
-   See SHEETS-SETUP.md in this folder for a copy-paste template.
+   Carts with Status = Hide are filtered out server-side and never
+   reach the browser at all.
+
+   See AIRTABLE-SETUP.md in this folder for the field-by-field guide.
    ═══════════════════════════════════════════════════════════ */
 
-var AGC_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1TFkeLQidL0K1GXOIa46lHA8DDeWK7apqQgpfkMuSHos/edit?gid=0#gid=0';
+var AGC_INVENTORY_API = '/api/inventory';
 
 (function () {
   'use strict';
@@ -42,47 +46,6 @@ var AGC_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1TFkeLQidL0K1GXOIa46
     });
   }
 
-  function toCsvUrl(url) {
-    if (!url) return '';
-    url = url.trim();
-    // Already a published-to-web CSV link
-    if (/\/spreadsheets\/d\/e\//.test(url)) {
-      if (/output=csv/.test(url)) return url;
-      return url.replace(/\/pub.*$/, '/pub?output=csv');
-    }
-    // Regular sheet URL → CSV export endpoint (works when sharing = anyone with link)
-    var m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-    if (m) {
-      var gid = (url.match(/[#&?]gid=(\d+)/) || [])[1];
-      return 'https://docs.google.com/spreadsheets/d/' + m[1] + '/gviz/tq?tqx=out:csv' + (gid ? '&gid=' + gid : '');
-    }
-    return url;
-  }
-
-  /* Proper CSV parser: quotes, embedded commas and newlines */
-  function parseCsv(text) {
-    var rows = [], row = [], field = '', inQuotes = false;
-    for (var i = 0; i < text.length; i++) {
-      var c = text[i];
-      if (inQuotes) {
-        if (c === '"') {
-          if (text[i + 1] === '"') { field += '"'; i++; }
-          else inQuotes = false;
-        } else field += c;
-      } else if (c === '"') {
-        inQuotes = true;
-      } else if (c === ',') {
-        row.push(field); field = '';
-      } else if (c === '\n' || c === '\r') {
-        if (c === '\r' && text[i + 1] === '\n') i++;
-        row.push(field); field = '';
-        rows.push(row); row = [];
-      } else field += c;
-    }
-    if (field !== '' || row.length) { row.push(field); rows.push(row); }
-    return rows.filter(function (r) { return r.some(function (v) { return v.trim() !== ''; }); });
-  }
-
   /* Convert Google Drive share links into direct image URLs */
   function driveToImage(url) {
     var m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]+)/) ||
@@ -91,46 +54,35 @@ var AGC_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1TFkeLQidL0K1GXOIa46
     return url;
   }
 
-  function parsePhotos(cell) {
-    if (!cell) return [];
-    return cell.split(/[\n,|]+/)
-      .map(function (s) { return s.trim(); })
+  function parsePhotos(list) {
+    if (!list) return [];
+    return (Array.isArray(list) ? list : String(list).split(/[\n,|]+/))
+      .map(function (s) { return String(s).trim(); })
       .filter(function (s) { return /^https?:\/\//i.test(s); })
       .map(driveToImage);
   }
 
-  function normHeader(h) {
-    h = h.toLowerCase().trim();
-    if (/^(name|model|title|cart)$/.test(h)) return 'name';
-    if (/^year$/.test(h)) return 'year';
-    if (/^price/.test(h)) return 'price';
-    if (/^(seats?|passengers?|seating)/.test(h)) return 'seats';
-    if (/^(type|condition|new.?used)/.test(h)) return 'type';
-    if (/^batter/.test(h)) return 'battery';
-    if (/^colou?r$/.test(h)) return 'color';
-    if (/^(description|notes|details)/.test(h)) return 'description';
-    if (/^(photos?|images?|pictures?)/.test(h)) return 'photos';
-    if (/^status$/.test(h)) return 'status';
-    if (/^featured/.test(h)) return 'featured';
-    return null;
-  }
-
-  function rowsToCarts(rows) {
-    var headers = rows[0].map(normHeader);
-    return rows.slice(1).map(function (r) {
-      var c = {};
-      headers.forEach(function (h, i) { if (h) c[h] = (r[i] || '').trim(); });
-      if (!c.name) return null;
-      c.photos = parsePhotos(c.photos);
-      c.status = (c.status || 'available').toLowerCase();
-      if (/^hide|hidden|draft$/.test(c.status)) return null;
-      if (/pend/.test(c.status)) c.status = 'pending';
-      else if (/sold/.test(c.status)) c.status = 'sold';
-      else c.status = 'available';
-      c.featured = /^(y|yes|true|1|x)$/i.test(c.featured || '');
+  /* The endpoint already normalises names, statuses, and the featured
+     checkbox, and drops hidden carts. All that is left is the derived
+     values the cards and filters need. */
+  function apiToCarts(records) {
+    return (records || []).map(function (r) {
+      if (!r || !r.name) return null;
+      var c = {
+        name: r.name,
+        year: r.year || '',
+        price: r.price || '',
+        seats: r.seats || '',
+        battery: r.battery || '',
+        color: r.color || '',
+        description: r.description || '',
+        photos: parsePhotos(r.photos),
+        status: r.status === 'pending' || r.status === 'sold' ? r.status : 'available',
+        featured: r.featured === true
+      };
       c.priceNum = parseFloat(String(c.price).replace(/[$,\s]/g, ''));
       c.seatsNum = parseInt(c.seats, 10) || null;
-      c.type = /used|pre.?owned/i.test(c.type || '') ? 'Used' : (/new/i.test(c.type || '') ? 'New' : '');
+      c.type = /used|pre.?owned/i.test(r.type || '') ? 'Used' : (/new/i.test(r.type || '') ? 'New' : '');
       return c;
     }).filter(Boolean);
   }
@@ -326,13 +278,12 @@ var AGC_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1TFkeLQidL0K1GXOIa46
 
   /* ---------- boot ---------- */
 
-  var csvUrl = toCsvUrl(AGC_SHEET_URL);
-  if (!csvUrl) return; // not configured yet — static fallback cards stay
+  if (!AGC_INVENTORY_API) return; // not configured yet — static fallback cards stay
 
-  fetch(csvUrl)
-    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-    .then(function (text) {
-      var carts = rowsToCarts(parseCsv(text));
+  fetch(AGC_INVENTORY_API, { cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (payload) {
+      var carts = apiToCarts(payload && payload.carts);
       if (!carts.length) return;
       state.carts = carts;
 
@@ -347,7 +298,8 @@ var AGC_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1TFkeLQidL0K1GXOIa46
       }
     })
     .catch(function (err) {
-      // Sheet unreachable — leave the static fallback in place, visitors see no error
-      if (window.console) console.warn('Inventory sheet not loaded:', err.message);
+      // Feed unreachable — leave the static fallback cards in place so
+      // visitors never see an error or an empty lot.
+      if (window.console) console.warn('Live inventory not loaded:', err.message);
     });
 })();

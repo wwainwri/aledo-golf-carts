@@ -1,38 +1,149 @@
 # ═══════════════════════════════════════════════════════════
 # Aledo Golf Carts — 301 redirects
-# Old Carsforsale-platform URLs → new site URLs
 #
-# Netlify/Cloudflare Pages format: this file deploys as-is at the
-# site root. On Apache hosting, use the equivalent rules in
-# redirects.htaccess instead.
+# These map the OLD aledogolfcarts.com site onto this one. They do
+# nothing until that domain points here; once it does, every link
+# Google already knows about lands on the right page instead of a
+# 404, and the ranking those pages earned carries across.
+#
+# The old site ran on the Carsforsale/Chassis platform. This list was
+# built from its live sitemap.xml (27 URLs) plus older paths still in
+# the Wayback Machine, so it covers what search engines actually hold.
+#
+# 301 = permanent. That is what tells Google to move the ranking.
+# Never use 302 here; a temporary redirect transfers nothing.
+#
+# Netlify reads this file from the site root. Apache hosts use the
+# equivalent rules in redirects.htaccess.
 # ═══════════════════════════════════════════════════════════
 
-# --- Inventory listing pages ---
-/golf-carts-for-sale        /inventory.html                301
-/golf+cart-for-sale         /inventory.html                301
-/cars-for-sale              /inventory.html                301
 
-# --- Individual cart detail pages (GUID URLs) ---
+# ─────────────────────────────────────────────────────────
+# One canonical URL per page
+#
+# Netlify serves both /inventory and /inventory.html — the same page
+# at two addresses, which is duplicate content. Every canonical tag,
+# internal link, and sitemap entry uses .html, so send the bare form
+# there. The ! forces the rule even though a file exists.
+# ─────────────────────────────────────────────────────────
+/inventory                  /inventory.html                301!
+/parts                      /parts.html                    301!
+/service-financing          /service-financing.html        301!
+/contact                    /contact.html                  301!
+/privacy                    /privacy.html                  301!
+/terms                      /terms.html                    301!
+/thank-you                  /thank-you.html                301!
+
+
+# ─────────────────────────────────────────────────────────
+# Old site — main pages (from its live sitemap)
+#
+# /about is both the old site's about page and the bare form of this
+# site's about.html, so one rule covers both jobs.
+# ─────────────────────────────────────────────────────────
+/about                      /about.html                    301!
+/about-us                   /about.html                    301
+/contact-us                 /contact.html                  301
+/schedule-test-drive        /contact.html                  301
+/finance                    /service-financing.html        301
+/loan-application           /service-financing.html        301
+/service-department         /service-financing.html        301
+/service-request            /service-financing.html        301
+/lithium-battery            /parts.html                    301
+
+
+# ─────────────────────────────────────────────────────────
+# Old site — inventory listing pages
+#
+# The old platform generated a page per make and per make/model. All
+# of them become the single live inventory page, which is the closest
+# match now that stock is filtered rather than paginated.
+#
+# Both the literal + and its encoded form %2B are listed, because
+# Google holds these URLs in both shapes.
+# ─────────────────────────────────────────────────────────
+/golf-carts-for-sale        /inventory.html                301
+/cars-for-sale              /inventory.html                301
+/golf+cart-for-sale         /inventory.html                301
+/golf%2Bcart-for-sale       /inventory.html                301
+
+/bad+boy+buggy-for-sale     /inventory.html                301
+/bad%2Bboy%2Bbuggy-for-sale /inventory.html                301
+/club+car-for-sale          /inventory.html                301
+/club%2Bcar-for-sale        /inventory.html                301
+/dach-for-sale              /inventory.html                301
+/madjax-for-sale            /inventory.html                301
+/teko-for-sale              /inventory.html                301
+
+# Make/model pages, and anything else nested under a make.
+/bad+boy+buggy/*            /inventory.html                301
+/bad%2Bboy%2Bbuggy/*        /inventory.html                301
+/club+car/*                 /inventory.html                301
+/club%2Bcar/*               /inventory.html                301
+/dach/*                     /inventory.html                301
+/madjax/*                   /inventory.html                301
+/teko/*                     /inventory.html                301
+/golf+cart/*                /inventory.html                301
+/golf%2Bcart/*              /inventory.html                301
+
+# Brands the old site listed but this one does not carry.
+/kawasaki                   /inventory.html                301
+/Kawasaki                   /inventory.html                301
+/yamaha                     /inventory.html                301
+/Yamaha                     /inventory.html                301
+/revel                      /inventory.html                301
+/Revel                      /inventory.html                301
+/velotrick                  /inventory.html                301
+/Velotrick                  /inventory.html                301
+/RRS                        /inventory.html                301
+
+# Seating and category pages.
+/4_Passenger                /inventory.html                301
+/6_Passenger                /inventory.html                301
+/Golf_Cart                  /inventory.html                301
+
+
+# ─────────────────────────────────────────────────────────
+# Old site — individual cart pages
+#
+# These were GUID URLs for one specific cart. Those carts are long
+# sold, so they land on current inventory rather than a dead end.
+# ─────────────────────────────────────────────────────────
 /Inventory/Details/*        /inventory.html                301
 /inventory/details/*        /inventory.html                301
 
-# --- Financing ---
-/finance                    /service-financing.html        301
 
-# --- Service ---
-/service-department         /service-financing.html        301
-/service-request            /service-financing.html        301
+# ─────────────────────────────────────────────────────────
+# Old site — rentals
+#
+# The old platform published dozens of rental filter permutations.
+# This business does not rent carts, so they go to inventory, which
+# is the nearest honest answer for someone looking for a cart.
+# ─────────────────────────────────────────────────────────
+/Rental_*                   /inventory.html                301
+/Units_For_Rent_Aledo_TX/*  /inventory.html                301
 
-# --- Lithium battery page ---
-/lithium-battery            /parts.html                    301
 
-# --- Contact / test drive ---
-/schedule-test-drive        /contact.html                  301
-/contact-us                 /contact.html                  301
-
-# --- About ---
-/about-us                   /index.html                    301
-
-# --- Legal ---
+# ─────────────────────────────────────────────────────────
+# Old site — legal
+# ─────────────────────────────────────────────────────────
+/TermsAndConditions         /terms.html                    301
 /terms-and-conditions       /terms.html                    301
 /privacy-policy             /privacy.html                  301
+
+
+# ─────────────────────────────────────────────────────────
+# Platform leftovers
+#
+# The old site was a Blazor app; these are its scripts and styles.
+# They cannot resolve here and would otherwise pile up as 404s in
+# Search Console. Sending them to the 404 page keeps the report
+# readable — they carry no ranking worth preserving.
+# ─────────────────────────────────────────────────────────
+/_framework/*               /404.html                      404
+/_content/*                 /404.html                      404
+/Header/*                   /404.html                      404
+/Footer/*                   /404.html                      404
+/Forms/*                    /404.html                      404
+/BusinessInfo/*             /404.html                      404
+/Map/*                      /404.html                      404

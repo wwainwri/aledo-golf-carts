@@ -1,22 +1,71 @@
 # Aledo Golf Carts — 301 redirects (Apache version)
-# Only needed if hosting on Apache: rename this file to .htaccess
-# at the site root. On Netlify/Cloudflare Pages, the _redirects
-# file is used instead and this file can be ignored.
+#
+# Only needed if this site ever moves to Apache hosting: rename the
+# file to .htaccess at the site root. On Netlify the _redirects file
+# is used instead and this one is ignored.
+#
+# Keep the two in step. _redirects is the source of truth.
 
 RewriteEngine On
 
-RewriteRule ^golf-carts-for-sale/?$ /inventory.html [R=301,L]
-RewriteRule ^golf\+cart-for-sale/?$ /inventory.html [R=301,L]
-RewriteRule ^cars-for-sale/?$ /inventory.html [R=301,L]
-RewriteRule ^[Ii]nventory/[Dd]etails/.*$ /inventory.html [R=301,L]
+# ── Force https and a single hostname ──
+# Netlify does both automatically. Apache does not, and serving the
+# same page on http, https, www, and non-www is four addresses for
+# one page. Uncomment and set the real domain when you switch hosts.
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+# RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+# RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+# ── One canonical URL per page ──
+# The extensionless form redirects to the .html form, matching the
+# canonical tags and the sitemap.
+RewriteRule ^inventory/?$ /inventory.html [R=301,L]
+RewriteRule ^parts/?$ /parts.html [R=301,L]
+RewriteRule ^service-financing/?$ /service-financing.html [R=301,L]
+RewriteRule ^contact/?$ /contact.html [R=301,L]
+RewriteRule ^privacy/?$ /privacy.html [R=301,L]
+RewriteRule ^terms/?$ /terms.html [R=301,L]
+RewriteRule ^thank-you/?$ /thank-you.html [R=301,L]
+
+# ── Old site: main pages ──
+RewriteRule ^about/?$ /about.html [R=301,L]
+RewriteRule ^about-us/?$ /about.html [R=301,L]
+RewriteRule ^contact-us/?$ /contact.html [R=301,L]
+RewriteRule ^schedule-test-drive/?$ /contact.html [R=301,L]
 RewriteRule ^finance/?$ /service-financing.html [R=301,L]
+RewriteRule ^loan-application/?$ /service-financing.html [R=301,L]
 RewriteRule ^service-department/?$ /service-financing.html [R=301,L]
 RewriteRule ^service-request/?$ /service-financing.html [R=301,L]
 RewriteRule ^lithium-battery/?$ /parts.html [R=301,L]
-RewriteRule ^schedule-test-drive/?$ /contact.html [R=301,L]
-RewriteRule ^contact-us/?$ /contact.html [R=301,L]
-RewriteRule ^about-us/?$ /index.html [R=301,L]
+
+# ── Old site: inventory listings ──
+# One rule catches every "…-for-sale" page the old platform generated.
+RewriteRule ^.*-for-sale/?$ /inventory.html [R=301,L]
+RewriteRule ^cars-for-sale/?$ /inventory.html [R=301,L]
+
+# Anything nested under a make.
+RewriteRule ^(bad\+boy\+buggy|bad%2Bboy%2Bbuggy|club\+car|club%2Bcar|dach|madjax|teko|golf\+cart|golf%2Bcart)/ /inventory.html [R=301,L]
+
+# Brands the old site listed but this one does not carry.
+RewriteRule ^(kawasaki|yamaha|revel|velotrick|rrs)/?$ /inventory.html [NC,R=301,L]
+
+# Seating and category pages.
+RewriteRule ^(4_Passenger|6_Passenger|Golf_Cart)/?$ /inventory.html [R=301,L]
+
+# ── Old site: individual cart pages (GUID URLs) ──
+RewriteRule ^[Ii]nventory/[Dd]etails/.*$ /inventory.html [R=301,L]
+
+# ── Old site: rentals (this business does not rent) ──
+RewriteRule ^Rental_ /inventory.html [R=301,L]
+RewriteRule ^Units_For_Rent /inventory.html [R=301,L]
+
+# ── Old site: legal ──
+RewriteRule ^TermsAndConditions/?$ /terms.html [R=301,L]
 RewriteRule ^terms-and-conditions/?$ /terms.html [R=301,L]
 RewriteRule ^privacy-policy/?$ /privacy.html [R=301,L]
+
+# ── Old platform leftovers (Blazor app assets) ──
+RewriteRule ^(_framework|_content|Header|Footer|Forms|BusinessInfo|Map)/ - [R=404,L]
 
 ErrorDocument 404 /404.html

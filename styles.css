@@ -577,6 +577,28 @@ section { padding: 5.5rem 5vw; }
   gap: 1.5rem;
 }
 
+/* ── ACCESSORY CARDS (photo-topped service cards) ── */
+.acc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+.acc-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.25s, transform 0.2s, box-shadow 0.2s;
+}
+.acc-card:hover { border-color: var(--orange); transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
+.acc-photo { aspect-ratio: 4 / 3; display: block; overflow: hidden; }
+.acc-photo img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.acc-body { padding: 1.6rem 1.7rem 1.8rem; }
+.acc-card h3 { font-size: 1.15rem; margin-bottom: 0.6rem; text-transform: uppercase; }
+.acc-card p { color: var(--gray); font-size: 0.9rem; line-height: 1.7; }
+
 .service-card {
   background: #fff;
   border: 1px solid var(--line);
@@ -603,6 +625,27 @@ section { padding: 5.5rem 5vw; }
 .service-card h3 { font-size: 1.15rem; margin-bottom: 0.75rem; text-transform: uppercase; }
 .service-card p { color: var(--gray); font-size: 0.9rem; line-height: 1.7; }
 .service-card .sc-link { display: inline-block; margin-top: 0.9rem; color: var(--orange); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ── BATTERY FEATURE PHOTO (parts page) ── */
+.battery-feature {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) 1fr;
+  gap: 3rem;
+  align-items: center;
+  margin-bottom: 3rem;
+}
+.battery-photo {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  background: #fff;
+}
+.battery-photo img { width: 100%; height: auto; display: block; }
+@media (max-width: 760px) {
+  .battery-feature { grid-template-columns: 1fr; gap: 1.75rem; }
+  .battery-photo { max-width: 300px; margin: 0 auto; }
+}
 
 /* ── BATTERY CARDS (parts page) ── */
 .battery-grid {
@@ -803,6 +846,9 @@ footer {
 .footer-bottom { border-top: 1px solid var(--line-dark); padding-top: 1.5rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; font-size: 0.78rem; }
 .footer-bottom a { color: rgba(255,255,255,0.6); text-decoration: none; }
 .footer-bottom a:hover { color: var(--orange-2); }
+.footer-credit { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 1.05rem; vertical-align: middle; }
+.footer-credit img { height: 22px; width: auto; vertical-align: middle; }
+.footer-credit a { font-weight: 600; }
 
 /* ── TCPA CONSENT ── */
 .consent-row {
