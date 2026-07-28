@@ -38,10 +38,34 @@ Two more endpoints work the same way:
 
 | Endpoint | Function | Purpose |
 |---|---|---|
-| `/api/inventory` | `inventory.mjs` | Public read of the lot. Cached. |
+| `/api/inventory` | `inventory.mjs` | Public read of the lot. Cached. Shows the owner more — see below. |
 | `/api/lead` | `lead.mjs` | Receives website forms, writes to Airtable Leads. |
 | `/api/cart` | `cart.mjs` | Lets the owner dashboard edit inventory. Locked. |
 | `/api/leads` | `leads.mjs` | Shows enquiries in the dashboard. Locked — holds customer PII. |
+
+### Why `/api/inventory` answers two different ways
+
+It is a public endpoint, but the owner dashboard sees two extra things:
+the date each cart was added (which the dashboard shows as "days on the
+lot") and the carts marked **Hide**.
+
+Both are withheld from the public on purpose. How long a cart has been
+sitting is a negotiating position, and a hidden cart is hidden precisely
+so nobody outside sees it.
+
+The extra data appears only when **both** are true:
+
+1. the request carries a valid `X-Owner-Key` header, and
+2. the URL has `?fresh=1`.
+
+The second condition is not redundant. `?fresh=1` is the path that
+answers `Cache-Control: no-store`. Without it the response is cacheable,
+and a CDN could hand the owner's copy to the next anonymous visitor —
+hidden carts and all. Tying the extra data to the uncached path rules
+that out by construction rather than depending on `Vary` being right.
+
+A wrong key is not an error here. Anyone browsing the website is not
+doing anything wrong, so they simply get the ordinary public response.
 
 ## Required environment variables
 

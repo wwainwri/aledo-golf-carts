@@ -21,6 +21,8 @@
    reaches the browser.
    ═══════════════════════════════════════════════════════════ */
 
+import { isOwner } from "../lib/owner-auth.mjs";
+
 export const config = { path: "/api/inventory" };
 
 const API = "https://api.airtable.com/v0";
@@ -78,7 +80,7 @@ function statusOf(value) {
   return "available";
 }
 
-function toCart(record) {
+function toCart(record, forOwner) {
   /* Tolerate field renames and casing drift in Airtable. */
   const fields = {};
   for (const [key, value] of Object.entries(record.fields || {})) {
@@ -106,11 +108,16 @@ function toCart(record) {
     status: statusOf(pick(fields, "status")),
     /* A checkbox arrives as true, or is absent entirely when unticked. */
     featured: pick(fields, "featured") === true ||
-      /^(y|yes|true|1|x)$/i.test(String(pick(fields, "featured")).trim())
+      /^(y|yes|true|1|x)$/i.test(String(pick(fields, "featured")).trim()),
+
+    /* When the row was created, which the dashboard turns into "days on
+       the lot". Deliberately owner-only: how long a cart has been sitting
+       is a negotiating position, not something to publish to buyers. */
+    created: forOwner ? (record.createdTime || "") : undefined
   };
 }
 
-async function fetchAllRecords(token) {
+async function fetchAllRecords(token, forOwner) {
   const carts = [];
   let offset;
 
@@ -135,7 +142,7 @@ async function fetchAllRecords(token) {
 
     const payload = await response.json();
     for (const record of payload.records || []) {
-      const cart = toCart(record);
+      const cart = toCart(record, forOwner);
       if (cart) carts.push(cart);
     }
     offset = payload.offset;
@@ -158,11 +165,28 @@ function json(body, status, extraHeaders) {
 export default async function handler(request) {
   const token = process.env.AIRTABLE_TOKEN;
 
+  /* The dashboard sends an owner key, and a custom header makes the
+     browser ask permission first. */
+  if (request.method === "OPTIONS") {
+    return json({ ok: true }, 200, {
+      "Access-Control-Allow-Headers": "Content-Type, X-Owner-Key",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Cache-Control": "no-store"
+    });
+  }
+
   /* The owner's own tools — the dashboard and the Post Queue — ask for
      ?fresh=1 and skip the cache entirely. They are looking at inventory
      precisely to check whether an edit landed, so showing them a cached
      copy defeats the point. Public pages get the cached response. */
   const wantsFresh = new URL(request.url).searchParams.has("fresh");
+
+  /* Signed-in owner, on a request that is never cached. Both halves
+     matter. Without ?fresh=1 this response can sit on the CDN, and the
+     next anonymous visitor would be handed the owner's copy — hidden
+     carts and all. Tying the extra data to the uncached path removes
+     that possibility rather than relying on getting Vary right. */
+  const forOwner = wantsFresh && isOwner(request);
 
   if (!token) {
     return json(
@@ -173,18 +197,20 @@ export default async function handler(request) {
   }
 
   try {
-    const carts = await fetchAllRecords(token);
+    const carts = await fetchAllRecords(token, forOwner);
 
     /* Hidden carts are deliberately kept off the public endpoint. The
        owner marks a cart Hide precisely so nobody outside sees it, and
-       this response is readable by anyone. They remain visible in
-       Airtable. */
-    const visible = carts.filter((cart) => cart.status !== "hidden");
+       this response is readable by anyone. The owner's own dashboard
+       does get them, so a hidden cart can be found and un-hidden
+       without a trip to Airtable. */
+    const visible = forOwner ? carts : carts.filter((cart) => cart.status !== "hidden");
 
     return json(
-      { carts: visible, count: visible.length, updated: new Date().toISOString() },
+      { carts: visible, count: visible.length, owner: forOwner, updated: new Date().toISOString() },
       200,
       {
+        "Access-Control-Allow-Headers": "Content-Type, X-Owner-Key",
         /* Fresh for CACHE_SECONDS, then served stale while it refreshes
            in the background so a visitor never waits on Airtable. */
         "Cache-Control": wantsFresh

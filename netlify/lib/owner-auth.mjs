@@ -57,6 +57,33 @@ export function checkOwner(request) {
   return null;
 }
 
+/**
+ * The same test as checkOwner, but it answers yes or no instead of
+ * refusing the request.
+ *
+ * This exists for the inventory endpoint, which is public but shows
+ * the owner a little more than it shows everyone else. A public
+ * caller is not doing anything wrong, so it must not be turned away —
+ * it just gets the ordinary response.
+ *
+ * Also fails closed: no OWNER_KEY set means nobody is the owner.
+ */
+export function isOwner(request) {
+  const ownerKey = process.env.OWNER_KEY;
+  if (!ownerKey) return false;
+
+  /* Reads the header defensively. This one is called from the public
+     inventory endpoint, where an odd request must produce the ordinary
+     public response rather than a 502 that takes the lot listing off
+     the website. checkOwner can afford to be stricter; this cannot. */
+  const headers = request && request.headers;
+  const supplied = headers && typeof headers.get === "function"
+    ? headers.get("x-owner-key")
+    : null;
+
+  return keyMatches(supplied, ownerKey);
+}
+
 /** Talks to Airtable without ever echoing its response body back out. */
 export async function airtable(method, path, body) {
   const token = process.env.AIRTABLE_TOKEN;
