@@ -113,7 +113,13 @@ function toCart(record, forOwner) {
     /* When the row was created, which the dashboard turns into "days on
        the lot". Deliberately owner-only: how long a cart has been sitting
        is a negotiating position, not something to publish to buyers. */
-    created: forOwner ? (record.createdTime || "") : undefined
+    created: forOwner ? (record.createdTime || "") : undefined,
+
+    /* What the cart cost to buy. The most commercially sensitive number
+       in the business — it is every customer's opening offer if it ever
+       leaks — so it travels only on the owner's uncached request, the
+       same as `created` above. */
+    cost: forOwner ? String(pick(fields, "cost", "purchase price", "paid", "buy price") || "") : undefined
   };
 }
 

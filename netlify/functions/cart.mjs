@@ -43,6 +43,10 @@ const WRITABLE = {
   Name: (v) => text(v, 200),
   Year: (v) => wholeNumber(v, 1900, 2100),
   Price: (v) => wholeNumber(v, 0, 10000000),
+  /* What the cart cost to buy. Writable so it can be entered from the
+     dashboard, but it is never returned to a public caller — see the
+     owner gate in inventory.mjs. */
+  Cost: (v) => wholeNumber(v, 0, 10000000),
   Seats: (v) => wholeNumber(v, 1, 12),
   Type: (v) => oneOf(v, ["New", "Used"]),
   Battery: (v) => text(v, 60),
