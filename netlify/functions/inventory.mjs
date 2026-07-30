@@ -65,6 +65,10 @@ function pick(fields, ...names) {
    Google uses when it fetches an og:image. */
 const SITE_ORIGIN = (process.env.SITE_ORIGIN || "https://aledogolfcarts.com").replace(/\/+$/, "");
 
+/* The longest side of the thumbnail Airtable generates for an
+   attachment. Its own documented size for `thumbnails.large`. */
+const THUMBNAIL_MAX = 512;
+
 /* Photos the owner uploaded into the Gallery attachment field.
 
    Airtable's own attachment URLs expire after a couple of hours, so
@@ -79,13 +83,20 @@ function galleryPhotos(recordId, value) {
     .map((item) => {
       const base = `${SITE_ORIGIN}/api/photo/${recordId}/${item.id}`;
       const large = item.thumbnails && item.thumbnails.large;
+
+      /* Airtable's large thumbnail is capped at 512px. Asking for it
+         only pays off when the original is meaningfully bigger — on a
+         small photo Airtable re-encodes it into something LARGER than
+         the original, which is the opposite of the point. Measured: a
+         480px source came back as 47KB against the original's 39KB. */
+      const width = Number(item.width) || 0;
+      const thumbnailHelps = large && large.url && width > THUMBNAIL_MAX * 1.4;
+
       return {
         /* Full size, for the lightbox and for link previews. */
         full: base,
-        /* Airtable's ~512px thumbnail, for the inventory grid. Falls
-           back to full size when Airtable has not made one yet — it
-           generates thumbnails a moment after upload. */
-        card: large && large.url ? `${base}?s=card` : base,
+        /* What the inventory grid should load. */
+        card: thumbnailHelps ? `${base}?s=card` : base,
         /* Intrinsic size, so the page can reserve the right space and
            the grid does not jump about as photos load. */
         width: Number(item.width) || 0,

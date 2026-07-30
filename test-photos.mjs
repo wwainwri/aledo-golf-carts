@@ -220,6 +220,17 @@ check("no expiring Airtable URL is ever handed out",
   !JSON.stringify(body).includes("airtableusercontent"), "leaked");
 check("card thumbnail offered separately",
   cart.gallery[0].card.endsWith("?s=card"), cart.gallery[0].card);
+
+/* A small original must NOT be routed through Airtable's thumbnail:
+   measured live, a 480px source came back re-encoded at 47KB against
+   the original's 39KB, so the "optimisation" cost 20% more bytes. */
+r = await inventoryWith({
+  Name: "Small photo", Status: "Available",
+  Gallery: [{ ...IMAGE, width: 480, height: 360 }]
+});
+body = await r.json();
+check("a small photo skips the thumbnail and serves the original",
+  !body.carts[0].gallery[0].card.includes("s=card"), body.carts[0].gallery[0].card);
 check("intrinsic size travels with the photo",
   cart.gallery[0].width === 1600 && cart.gallery[0].height === 1200, cart.gallery[0]);
 

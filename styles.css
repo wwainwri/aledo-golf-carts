@@ -443,6 +443,130 @@ section { padding: 5.5rem 5vw; }
   font-weight: 600;
   padding: 0.2rem 0.55rem;
   border-radius: 100px;
+  pointer-events: none;
+}
+
+/* The photo itself is the button that opens the full-size view. It sits
+   over the image but under the arrows, which are declared after it. */
+.photo-zoom {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: zoom-in;
+}
+.photo-zoom:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: -3px;
+}
+
+.cart-photo .photo-nav { z-index: 2; }
+
+.photo-dots {
+  position: absolute;
+  bottom: 0.65rem; left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+.photo-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.55);
+  box-shadow: 0 0 3px rgba(0,0,0,0.5);
+  transition: background 0.2s, transform 0.2s;
+}
+.photo-dot.on { background: var(--orange); transform: scale(1.35); }
+
+/* On a touch screen the arrows are always visible; with a mouse they
+   appear on hover so they do not sit permanently over the cart. */
+@media (hover: hover) {
+  .cart-photo .photo-nav { opacity: 0; transition: opacity 0.2s, background 0.2s; }
+  .cart-card:hover .photo-nav,
+  .cart-photo:focus-within .photo-nav { opacity: 1; }
+}
+
+/* ---------- full-size photo viewer ---------- */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(14,13,11,0.94);
+  padding: clamp(0.75rem, 3vw, 2.5rem);
+}
+.lightbox.open { display: flex; }
+
+.lb-stage {
+  margin: 0;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lb-stage img {
+  max-width: 100%;
+  /* Leaves room for the caption bar so a tall photo cannot cover it. */
+  max-height: calc(100vh - 7rem);
+  width: auto; height: auto;
+  display: block;
+  border-radius: 6px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.lb-close, .lb-nav {
+  position: absolute;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  /* Comfortably past the 44px minimum for a touch target. */
+  width: 48px; height: 48px;
+}
+.lb-close:hover, .lb-nav:hover { background: var(--orange); }
+.lb-close:focus-visible, .lb-nav:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+
+.lb-close { top: 1rem; right: 1rem; font-size: 1.9rem; line-height: 1; }
+.lb-nav { top: 50%; transform: translateY(-50%); font-size: 1.6rem; }
+.lb-nav.prev { left: 1rem; }
+.lb-nav.next { right: 1rem; }
+
+.lb-bar {
+  position: absolute;
+  bottom: 1rem; left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  color: #fff;
+  background: rgba(0,0,0,0.5);
+  padding: 0.45rem 1.1rem;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  max-width: calc(100% - 2rem);
+}
+.lb-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-count { opacity: 0.75; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* On a narrow screen the arrows would sit on top of the photo, so they
+   move down beside the caption instead. */
+@media (max-width: 560px) {
+  .lb-nav { top: auto; bottom: 1rem; transform: none; width: 44px; height: 44px; }
+  .lb-nav.prev { left: 0.75rem; }
+  .lb-nav.next { right: 0.75rem; }
+  .lb-stage img { max-height: calc(100vh - 9rem); }
 }
 
 .cart-badges { position: absolute; top: 0.7rem; left: 0.7rem; display: flex; gap: 0.4rem; }
