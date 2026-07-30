@@ -93,6 +93,10 @@ function galleryPhotos(recordId, value) {
       const thumbnailHelps = large && large.url && width > THUMBNAIL_MAX * 1.4;
 
       return {
+        /* Airtable's own id for this attachment. The dashboard sends it
+           back to reorder or delete. Not a secret: it is already half of
+           the photo URL, and on its own it opens nothing. */
+        id: item.id,
         /* Full size, for the lightbox and for link previews. */
         full: base,
         /* What the inventory grid should load. */
