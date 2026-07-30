@@ -67,7 +67,7 @@
     {
       "@type": "Question",
       "name": "How much does golf cart service cost?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Typical ranges: lead-acid battery set replacement $600–$900, lithium upgrade $2,200–$3,500, tires $350–$600 for a set, brakes $120–$250, tune-ups $90–$150, and diagnostics $75–$125. Our free online service estimator adds up your exact list instantly." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Typical ranges: lead-acid battery set replacement $1,200–$1,500, lithium upgrade $2,200–$3,500, tires $350–$600 for a set, brakes $120–$250, tune-ups $90–$150, and diagnostics $75–$125. Our free online service estimator adds up your exact list instantly." }
     },
     {
       "@type": "Question",
@@ -249,7 +249,7 @@
       <div class="field">
         <label>Select the services you need</label>
         <div class="checkbox-grid">
-          <label class="checkbox-item"><input type="checkbox" class="sv-item" data-low="600" data-high="900" /> Lead-Acid Battery Set Replacement <span class="ci-price">$600–$900</span></label>
+          <label class="checkbox-item"><input type="checkbox" class="sv-item" data-low="1200" data-high="1500" /> Lead-Acid Battery Set Replacement <span class="ci-price">$1,200–$1,500</span></label>
           <label class="checkbox-item"><input type="checkbox" class="sv-item" data-low="2200" data-high="3500" /> Lithium Battery Upgrade <span class="ci-price">$2,200–$3,500</span></label>
           <label class="checkbox-item"><input type="checkbox" class="sv-item" data-low="350" data-high="600" /> Tire Replacement (Set of 4) <span class="ci-price">$350–$600</span></label>
           <label class="checkbox-item"><input type="checkbox" class="sv-item" data-low="120" data-high="250" /> Brake Service <span class="ci-price">$120–$250</span></label>
@@ -559,7 +559,7 @@ if (new URLSearchParams(location.search).get('autodemo') === '1') {
     say('Service Estimator — fewer "how much for…" calls');
     openTool('service');
     await sleep(900);
-    tick('.sv-item[data-low="600"]');  await sleep(800);
+    tick('.sv-item[data-low="1200"]');  await sleep(800);
     tick('.sv-item[data-low="120"]');  await sleep(800);
     tick('.sv-item[data-low="90"]');   await sleep(1400);
 

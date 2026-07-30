@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img"
+     aria-label="Illustration of a golf cart overhead sound bar with an illuminated light ring">
+  <title>Golf cart sound bar with light ring</title>
+
+  <!--
+    Drawn from scratch rather than using a manufacturer's product
+    photograph, so there is no copyright or trademark question, and no
+    brand name on a part we might not always stock. The light ring is
+    the site's own orange, which also makes it sit properly next to the
+    other cards instead of looking like a borrowed stock image.
+  -->
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2724"/>
+      <stop offset="0.55" stop-color="#1a1816"/>
+      <stop offset="1" stop-color="#100f0e"/>
+    </linearGradient>
+
+    <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a4640"/>
+      <stop offset="0.18" stop-color="#332f2b"/>
+      <stop offset="0.82" stop-color="#221f1d"/>
+      <stop offset="1" stop-color="#141312"/>
+    </linearGradient>
+
+    <linearGradient id="endcap" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#514c45"/>
+      <stop offset="1" stop-color="#1d1b19"/>
+    </linearGradient>
+
+    <linearGradient id="clamp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d3934"/>
+      <stop offset="1" stop-color="#191817"/>
+    </linearGradient>
+
+    <!-- The perforated grille, tiled rather than drawn hole by hole -->
+    <pattern id="mesh" width="9" height="9" patternUnits="userSpaceOnUse">
+      <rect width="9" height="9" fill="#0d0c0c"/>
+      <circle cx="2.5" cy="2.5" r="1.7" fill="#26231f"/>
+      <circle cx="7" cy="7" r="1.7" fill="#26231f"/>
+    </pattern>
+
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0"    stop-color="#F4923D"/>
+      <stop offset="0.42" stop-color="#E36623"/>
+      <stop offset="0.72" stop-color="#F4923D"/>
+      <stop offset="1"    stop-color="#E36623"/>
+    </linearGradient>
+
+    <filter id="glow" x="-30%" y="-120%" width="160%" height="340%">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+    <filter id="softglow" x="-40%" y="-200%" width="180%" height="500%">
+      <feGaussianBlur stdDeviation="30"/>
+    </filter>
+
+    <radialGradient id="floor" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="rgba(227,102,35,0.30)"/>
+      <stop offset="1" stop-color="rgba(227,102,35,0)"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="600" fill="url(#bg)"/>
+
+  <!-- Light thrown onto the surface below -->
+  <ellipse cx="400" cy="470" rx="330" ry="52" fill="url(#floor)"/>
+
+  <!-- Roof clamps, drawn first so the bar sits in front of them -->
+  <g>
+    <rect x="243" y="118" width="52" height="62" rx="15" fill="url(#clamp)"/>
+    <rect x="243" y="118" width="52" height="16" rx="8" fill="#5a544c"/>
+    <rect x="505" y="118" width="52" height="62" rx="15" fill="url(#clamp)"/>
+    <rect x="505" y="118" width="52" height="16" rx="8" fill="#5a544c"/>
+  </g>
+
+  <!-- Ambient bloom around the whole bar -->
+  <rect x="96" y="196" width="608" height="176" rx="88" fill="#E36623" opacity="0.22" filter="url(#softglow)"/>
+
+  <!-- Bar shell -->
+  <rect x="104" y="200" width="592" height="168" rx="30" fill="url(#shell)"/>
+  <rect x="104" y="200" width="592" height="168" rx="30" fill="none" stroke="#0a0909" stroke-width="3"/>
+  <!-- Top highlight, where the light catches the moulding -->
+  <path d="M 132 210 L 668 210" stroke="#6b645b" stroke-width="4" stroke-linecap="round" opacity="0.65"/>
+
+  <!-- Vent slots along the top face -->
+  <g fill="#0e0d0c" opacity="0.9">
+    <rect x="300" y="222" width="26" height="7" rx="3.5"/>
+    <rect x="340" y="222" width="26" height="7" rx="3.5"/>
+    <rect x="380" y="222" width="26" height="7" rx="3.5"/>
+    <rect x="420" y="222" width="26" height="7" rx="3.5"/>
+    <rect x="460" y="222" width="26" height="7" rx="3.5"/>
+  </g>
+
+  <!-- Moulded end caps -->
+  <rect x="104" y="200" width="74" height="168" rx="30" fill="url(#endcap)"/>
+  <rect x="622" y="200" width="74" height="168" rx="30" fill="url(#endcap)"/>
+  <g stroke="#0a0909" stroke-width="3" opacity="0.55" fill="none">
+    <path d="M 122 246 h 40"/><path d="M 122 266 h 40"/><path d="M 122 286 h 40"/>
+    <path d="M 122 306 h 40"/><path d="M 122 326 h 40"/>
+    <path d="M 638 246 h 40"/><path d="M 638 266 h 40"/><path d="M 638 286 h 40"/>
+    <path d="M 638 306 h 40"/><path d="M 638 326 h 40"/>
+  </g>
+
+  <!-- Speaker face -->
+  <rect x="150" y="228" width="500" height="112" rx="20" fill="url(#mesh)"/>
+  <rect x="150" y="228" width="500" height="112" rx="20" fill="none" stroke="#0a0909" stroke-width="3"/>
+
+  <!-- The illuminated ring, blurred underneath then drawn crisp on top -->
+  <rect x="164" y="240" width="472" height="88" rx="26" fill="none"
+        stroke="url(#ring)" stroke-width="16" filter="url(#glow)" opacity="0.9"/>
+  <rect x="164" y="240" width="472" height="88" rx="26" fill="none"
+        stroke="url(#ring)" stroke-width="7"/>
+  <rect x="164" y="240" width="472" height="88" rx="26" fill="none"
+        stroke="#FFD9AF" stroke-width="2.5" opacity="0.85"/>
+
+  <!-- Driver cones showing through the mesh -->
+  <g opacity="0.5">
+    <circle cx="258" cy="284" r="30" fill="none" stroke="#000" stroke-width="7"/>
+    <circle cx="258" cy="284" r="12" fill="#151413"/>
+    <circle cx="542" cy="284" r="30" fill="none" stroke="#000" stroke-width="7"/>
+    <circle cx="542" cy="284" r="12" fill="#151413"/>
+  </g>
+
+  <!-- Centre badge, deliberately a plain mark and not anyone's logo -->
+  <g>
+    <rect x="368" y="266" width="64" height="36" rx="8" fill="#141312" stroke="#E36623" stroke-width="2.5"/>
+    <path d="M 380 292 L 388 276 L 396 292 M 383.5 286 h 9" stroke="#E36623" stroke-width="2.6"
+          fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="410" cy="284" r="7.5" fill="none" stroke="#E36623" stroke-width="2.6"/>
+    <circle cx="410" cy="284" r="2.4" fill="#E36623"/>
+  </g>
+
+  <!-- Underside shadow, so the bar reads as hanging rather than floating -->
+  <rect x="120" y="360" width="560" height="16" rx="8" fill="#000" opacity="0.5"/>
+</svg>
