@@ -169,13 +169,21 @@ check("strips path separators out of the filename",
 /* ── 3. reorder and delete via /api/cart ─────────────────── */
 section("3. Reorder and delete");
 
-function cartCall(fields) {
+function cartCallWith(fields, extra) {
   calls = [];
   return cartMod.default(new Request("https://aledogolfcarts.com/api/cart", {
     method: "PATCH",
     headers: { "Content-Type": "application/json", "X-Owner-Key": process.env.OWNER_KEY },
-    body: JSON.stringify({ id: REC, fields })
+    body: JSON.stringify(Object.assign({ id: REC, fields }, extra || {}))
   }));
+}
+function cartCall(fields) { return cartCallWith(fields, null); }
+
+/* The guard reads the record before writing, so the write is no longer
+   the first call. */
+function written() {
+  const patch = calls.find((c) => c.options && c.options.method === "PATCH");
+  return patch ? JSON.parse(patch.options.body) : null;
 }
 
 stubResponse("api.airtable.com", () =>
@@ -184,14 +192,14 @@ stubResponse("api.airtable.com", () =>
 r = await cartCall({ Gallery: [{ id: ATT2 }, { id: ATT }] });
 check("accepts a reorder", r.status === 200, r.status);
 check("sends the ids in the order given",
-  JSON.stringify(JSON.parse(calls[0].options.body).records[0].fields.Gallery) ===
+  JSON.stringify(written().records[0].fields.Gallery) ===
   JSON.stringify([{ id: ATT2 }, { id: ATT }]),
-  JSON.parse(calls[0].options.body).records[0].fields.Gallery);
+  written().records[0].fields.Gallery);
 
 r = await cartCall({ Gallery: [] });
 check("an empty list clears the gallery",
   r.status === 200 &&
-  JSON.parse(calls[0].options.body).records[0].fields.Gallery.length === 0, r.status);
+  written().records[0].fields.Gallery.length === 0, r.status);
 
 r = await cartCall({ Gallery: [{ url: "https://evil.example/payload.jpg" }] });
 body = await r.json();
@@ -200,6 +208,50 @@ check("refuses a URL — it will not fetch an arbitrary address",
 
 r = await cartCall({ Gallery: new Array(31).fill({ id: ATT }) });
 check("caps the gallery at 30 photos", r.status === 400, r.status);
+
+/* ── 3b. a shorter list must be deliberate ───────────────
+
+   Writing Gallery replaces the field, so anything left out is deleted
+   and cannot be recovered. A truncated list is both the most damaging
+   thing this endpoint can be sent and the easiest to send by accident.
+   Photos did once disappear from a live cart with no explanation, so
+   this is the belt to that braces. */
+section("3b. Refusing to delete photos by accident");
+
+/* Airtable currently holds three. */
+stubResponse("api.airtable.com", (href, options) =>
+  (options && options.method === "GET") || !options
+    ? new Response(JSON.stringify({ id: REC, fields: { Gallery: [{ id: ATT }, { id: ATT2 }, { id: "attDDDDDDDDDDDDDD" }] } }), { status: 200 })
+    : new Response(JSON.stringify({ records: [{ id: REC }] }), { status: 200 }));
+
+r = await cartCall({ Gallery: [{ id: ATT }] });
+body = await r.json();
+check("a shorter list is refused", r.status === 409, r.status);
+check("and says how many it would have deleted", /2 photos/.test(body.message), body.message);
+check("nothing was written",
+  !calls.some((c) => c.options && c.options.method === "PATCH"),
+  calls.map((c) => c.options && c.options.method));
+
+r = await cartCallWith({ Gallery: [{ id: ATT }] }, { allowPhotoRemoval: true });
+check("a real delete, which says so, goes through", r.status === 200, r.status);
+
+r = await cartCall({ Gallery: [{ id: ATT2 }, { id: ATT }, { id: "attDDDDDDDDDDDDDD" }] });
+check("a reorder of the same photos is untouched by the guard", r.status === 200, r.status);
+
+r = await cartCall({ Gallery: [{ id: ATT }, { id: ATT2 }, { id: "attDDDDDDDDDDDDDD" }, { id: "attEEEEEEEEEEEEEE" }] });
+check("a longer list is fine too", r.status === 200, r.status);
+
+/* If we cannot read what is there, we cannot say the write is safe. */
+stubResponse("api.airtable.com", (href, options) =>
+  (options && options.method === "GET") || !options
+    ? new Response("nope", { status: 500 })
+    : new Response(JSON.stringify({ records: [{ id: REC }] }), { status: 200 }));
+r = await cartCall({ Gallery: [{ id: ATT }] });
+check("refuses when it cannot check what is already there", r.status === 502, r.status);
+
+/* Back to the plain stub for anything after this. */
+stubResponse("api.airtable.com", () =>
+  new Response(JSON.stringify({ records: [{ id: REC }] }), { status: 200 }));
 
 /* ── 4. what the website is handed ───────────────────────── */
 section("4. Inventory output");

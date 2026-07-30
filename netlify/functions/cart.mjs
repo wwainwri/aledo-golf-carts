@@ -35,6 +35,7 @@ export const config = { path: "/api/cart" };
 
 const BASE_ID = process.env.AIRTABLE_BASE_ID || "appcZt06B1gHgQwXr";
 const TABLE_ID = process.env.AIRTABLE_TABLE_ID || "tblrmWorOHAYtw2pv";
+const GALLERY_FIELD = process.env.AIRTABLE_GALLERY_FIELD || "Gallery";
 
 /* The only fields this endpoint may write, and how to clean each one.
    Anything else in the request body is ignored rather than rejected,
@@ -157,6 +158,48 @@ export default async function handler(request) {
     const id = String(input.id || "").trim();
     if (!/^rec[A-Za-z0-9]+$/.test(id)) {
       return json({ ok: false, error: "invalid", message: "A valid record id is required." }, 400);
+    }
+
+    /* ── Photos are not recoverable, so removing one has to be deliberate ──
+
+       Writing Gallery replaces the whole field: anything left out of the
+       list is deleted from Airtable, and a deleted attachment cannot be
+       undone from here. That makes a short list the most destructive
+       thing this endpoint can be asked to do, and the easiest to send by
+       accident — a stale copy of the list, a half-built array, a race
+       between two saves.
+
+       So a write that would REMOVE photos is refused unless the caller
+       says that is what it meant. Reordering keeps the same photos and
+       passes straight through; deleting sends allowPhotoRemoval and is
+       let through. Anything else is a bug, and it stops here rather than
+       at the customer's empty listing.
+
+       Costs one extra read per gallery write, which is worth it. */
+    if (Object.prototype.hasOwnProperty.call(fields, "Gallery") && input.allowPhotoRemoval !== true) {
+      try {
+        const current = await airtableFetch("GET", `${BASE_ID}/${TABLE_ID}/${id}`);
+        const held = (current.fields || {})[GALLERY_FIELD];
+        const before = Array.isArray(held) ? held.length : 0;
+        const after = fields.Gallery.length;
+
+        if (after < before) {
+          return json({
+            ok: false,
+            error: "would_remove_photos",
+            message: `That would delete ${before - after} photo${before - after === 1 ? "" : "s"} ` +
+              `from this cart, and nothing asked to remove any. Nothing was changed.`
+          }, 409);
+        }
+      } catch (error) {
+        /* Cannot confirm what is there, so cannot confirm the write is
+           safe. Refusing is the right way to be wrong here. */
+        return json({
+          ok: false,
+          error: "upstream_error",
+          message: "Could not check the cart's photos before saving, so nothing was changed."
+        }, 502);
+      }
     }
 
     const updated = await airtable("PATCH", {
