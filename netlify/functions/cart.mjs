@@ -53,6 +53,11 @@ const WRITABLE = {
   Color: (v) => text(v, 60),
   Description: (v) => text(v, 2000),
   Photos: (v) => text(v, 4000),
+  /* The uploaded photo gallery. Uploading is a separate endpoint —
+     Airtable takes file bytes at a different host — so all this does is
+     reorder and delete, by sending back the ids to keep, in the order
+     to keep them. An empty array clears the gallery. */
+  Gallery: (v) => attachmentIds(v),
   Status: (v) => oneOf(v, ["Available", "Pending", "Sold", "Hide"]),
   Featured: (v) => v === true || v === "true" || v === 1
 };
@@ -60,6 +65,25 @@ const WRITABLE = {
 function text(value, max) {
   const cleaned = String(value == null ? "" : value).trim().slice(0, max);
   return cleaned === "" ? null : cleaned; /* null clears the cell */
+}
+
+/* Airtable rewrites an attachment field to exactly the list it is
+   given, so the order sent is the order stored and anything left out is
+   deleted. Only ids are accepted — never a URL — because a URL here
+   would let anyone holding the owner key make this site fetch an
+   arbitrary address and store the result. */
+function attachmentIds(value) {
+  if (value == null || value === "") return [];
+  if (!Array.isArray(value)) throw new Error("Gallery must be a list of photos.");
+  if (value.length > 30) throw new Error("A cart can hold at most 30 photos.");
+
+  return value.map((item) => {
+    const id = typeof item === "string" ? item : (item && item.id);
+    if (!/^att[A-Za-z0-9]{10,20}$/.test(String(id || ""))) {
+      throw new Error("Each photo must be given by its id.");
+    }
+    return { id: String(id) };
+  });
 }
 
 function wholeNumber(value, min, max) {

@@ -59,10 +59,45 @@ function pick(fields, ...names) {
   return "";
 }
 
-/* Photos is a text field of Google Drive links today. If it is ever
-   converted to an Airtable attachment field this still works, because
-   attachments arrive as an array of objects with a `url`. */
-function photoList(value) {
+/* Where the photo proxy lives. Absolute rather than relative because
+   these URLs are read from three different origins — the website, the
+   owner dashboard on its own Netlify site, and whatever Facebook or
+   Google uses when it fetches an og:image. */
+const SITE_ORIGIN = (process.env.SITE_ORIGIN || "https://aledogolfcarts.com").replace(/\/+$/, "");
+
+/* Photos the owner uploaded into the Gallery attachment field.
+
+   Airtable's own attachment URLs expire after a couple of hours, so
+   none of them are handed out. Each photo becomes a permanent address
+   on our own domain instead — see netlify/functions/photo.mjs for why
+   that matters. */
+function galleryPhotos(recordId, value) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((item) => item && item.id && /^image\//i.test(String(item.type || "")))
+    .map((item) => {
+      const base = `${SITE_ORIGIN}/api/photo/${recordId}/${item.id}`;
+      const large = item.thumbnails && item.thumbnails.large;
+      return {
+        /* Full size, for the lightbox and for link previews. */
+        full: base,
+        /* Airtable's ~512px thumbnail, for the inventory grid. Falls
+           back to full size when Airtable has not made one yet — it
+           generates thumbnails a moment after upload. */
+        card: large && large.url ? `${base}?s=card` : base,
+        /* Intrinsic size, so the page can reserve the right space and
+           the grid does not jump about as photos load. */
+        width: Number(item.width) || 0,
+        height: Number(item.height) || 0
+      };
+    });
+}
+
+/* The original Photos field: a text column of Google Drive links,
+   one per line. Still read so that nothing breaks for a cart whose
+   photos have not been moved into Gallery yet. */
+function legacyPhotos(value) {
   if (Array.isArray(value)) {
     return value.map((item) => (item && item.url) || "").filter(Boolean);
   }
@@ -90,6 +125,12 @@ function toCart(record, forOwner) {
   const name = String(pick(fields, "name", "model", "cart", "title")).trim();
   if (!name) return null;
 
+  /* Uploaded photos win over the old pasted Drive links. A cart that
+     has been given a real gallery should not also show whatever single
+     link was left behind in the legacy column. */
+  const gallery = galleryPhotos(record.id, pick(fields, "gallery"));
+  const legacy = legacyPhotos(pick(fields, "photos", "photo", "images"));
+
   const price = pick(fields, "price");
   const year = pick(fields, "year");
   const seats = pick(fields, "seats");
@@ -104,7 +145,15 @@ function toCart(record, forOwner) {
     battery: String(pick(fields, "battery")).trim(),
     color: String(pick(fields, "color", "colour")).trim(),
     description: String(pick(fields, "description", "notes", "details")).trim(),
-    photos: photoList(pick(fields, "photos", "photo", "images")),
+    /* Plain list of full-size URLs. Everything that existed before the
+       gallery — the Post Queue, the dashboard table, schema.org — reads
+       this and keeps working unchanged. */
+    photos: gallery.length ? gallery.map((photo) => photo.full) : legacy,
+
+    /* The richer form, with a thumbnail and intrinsic size per photo.
+       Empty for a cart still on legacy Drive links, so anything reading
+       this must fall back to `photos`. */
+    gallery,
     status: statusOf(pick(fields, "status")),
     /* A checkbox arrives as true, or is absent entirely when unticked. */
     featured: pick(fields, "featured") === true ||
