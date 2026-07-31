@@ -109,18 +109,6 @@ function galleryPhotos(recordId, value) {
     });
 }
 
-/* The original Photos field: a text column of Google Drive links,
-   one per line. Still read so that nothing breaks for a cart whose
-   photos have not been moved into Gallery yet. */
-function legacyPhotos(value) {
-  if (Array.isArray(value)) {
-    return value.map((item) => (item && item.url) || "").filter(Boolean);
-  }
-  return String(value || "")
-    .split(/[\n,|]+/)
-    .map((url) => url.trim())
-    .filter((url) => /^https?:\/\//i.test(url));
-}
 
 function statusOf(value) {
   const status = String(value || "").trim().toLowerCase();
@@ -140,11 +128,7 @@ function toCart(record, forOwner) {
   const name = String(pick(fields, "name", "model", "cart", "title")).trim();
   if (!name) return null;
 
-  /* Uploaded photos win over the old pasted Drive links. A cart that
-     has been given a real gallery should not also show whatever single
-     link was left behind in the legacy column. */
   const gallery = galleryPhotos(record.id, pick(fields, "gallery"));
-  const legacy = legacyPhotos(pick(fields, "photos", "photo", "images"));
 
   const price = pick(fields, "price");
   const year = pick(fields, "year");
@@ -160,14 +144,12 @@ function toCart(record, forOwner) {
     battery: String(pick(fields, "battery")).trim(),
     color: String(pick(fields, "color", "colour")).trim(),
     description: String(pick(fields, "description", "notes", "details")).trim(),
-    /* Plain list of full-size URLs. Everything that existed before the
-       gallery — the Post Queue, the dashboard table, schema.org — reads
-       this and keeps working unchanged. */
-    photos: gallery.length ? gallery.map((photo) => photo.full) : legacy,
+    /* Plain list of full-size URLs. Everything that reads photos without
+       caring about thumbnails or sizes — the Post Queue, the dashboard
+       table, schema.org — uses this. */
+    photos: gallery.map((photo) => photo.full),
 
-    /* The richer form, with a thumbnail and intrinsic size per photo.
-       Empty for a cart still on legacy Drive links, so anything reading
-       this must fall back to `photos`. */
+    /* The same photos with a thumbnail and intrinsic size each. */
     gallery,
     status: statusOf(pick(fields, "status")),
     /* A checkbox arrives as true, or is absent entirely when unticked. */

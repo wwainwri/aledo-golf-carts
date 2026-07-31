@@ -286,25 +286,18 @@ check("a small photo skips the thumbnail and serves the original",
 check("intrinsic size travels with the photo",
   cart.gallery[0].width === 1600 && cart.gallery[0].height === 1200, cart.gallery[0]);
 
+/* The old Photos text column is gone. A leftover value in it must not
+   resurrect as a photo — every cart is on Gallery now. */
 r = await inventoryWith({
   Name: "Old Cart", Status: "Available",
   Photos: "https://drive.google.com/file/d/abc/view"
 });
 body = await r.json();
 cart = body.carts[0];
-check("a cart still on Drive links keeps working",
-  cart.photos[0].includes("drive.google.com"), cart.photos[0]);
-check("its gallery is empty, so callers know to fall back",
-  Array.isArray(cart.gallery) && cart.gallery.length === 0, cart.gallery);
-
-r = await inventoryWith({
-  Name: "Both", Status: "Available", Gallery: [IMAGE],
-  Photos: "https://drive.google.com/file/d/abc/view"
-});
-body = await r.json();
-check("uploaded photos win over a leftover Drive link",
-  body.carts[0].photos.length === 1 && body.carts[0].photos[0].includes("/api/photo/"),
-  body.carts[0].photos);
+check("a stray Drive link is ignored, not shown",
+  cart.photos.length === 0 && cart.gallery.length === 0, cart.photos);
+check("no Google Drive URL can reach the website",
+  !JSON.stringify(body).includes("drive.google.com"), "leaked");
 
 r = await inventoryWith({
   Name: "Docs", Status: "Available",

@@ -53,8 +53,7 @@ const WRITABLE = {
   Battery: (v) => text(v, 60),
   Color: (v) => text(v, 60),
   Description: (v) => text(v, 2000),
-  Photos: (v) => text(v, 4000),
-  /* The uploaded photo gallery. Uploading is a separate endpoint —
+  /* The photo gallery. Uploading is a separate endpoint —
      Airtable takes file bytes at a different host — so all this does is
      reorder and delete, by sending back the ids to keep, in the order
      to keep them. An empty array clears the gallery. */

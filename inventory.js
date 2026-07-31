@@ -24,9 +24,7 @@
      color        "Matte Black"
      description  one or two sentences shown on the card
      photos       array of image links (the cover photo is the first)
-     gallery      the same photos with a thumbnail and pixel size each,
-                  present for carts whose photos were uploaded rather
-                  than pasted in as Drive links
+     gallery      the same photos with a thumbnail and pixel size each
      status       "available", "pending", or "sold"
      featured     true to show the cart on the homepage
 
@@ -49,46 +47,25 @@ var AGC_INVENTORY_API = '/api/inventory';
     });
   }
 
-  /* Convert Google Drive share links into direct image URLs */
-  function driveToImage(url) {
-    var m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]+)/) ||
-            url.match(/drive\.google\.com\/.*[?&]id=([a-zA-Z0-9_-]+)/);
-    if (m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w1200';
-    return url;
-  }
-
-  /* Every photo ends up in one shape, whichever way it reached us:
+  /* Every photo arrives in one shape:
 
        full   the big version, for the lightbox
        card   what the grid should load — smaller when that helps
-       w, h   intrinsic size, or 0 when we do not know it
-
-     Carts whose photos the owner has uploaded arrive as `gallery`,
-     already carrying sizes. Carts still on the old pasted Drive links
-     arrive as plain strings with no size at all, which is why w and h
-     have to be allowed to be unknown. */
+       w, h   intrinsic size, so the page can reserve the space */
   function normalisePhotos(record) {
-    var gallery = record && record.gallery;
-    if (Array.isArray(gallery) && gallery.length) {
-      return gallery
-        .filter(function (p) { return p && p.full; })
-        .map(function (p) {
-          return {
-            full: p.full,
-            card: p.card || p.full,
-            w: Number(p.width) || 0,
-            h: Number(p.height) || 0
-          };
-        });
-    }
+    var gallery = (record && record.gallery) || [];
+    if (!Array.isArray(gallery)) return [];
 
-    var list = record && record.photos;
-    if (!list) return [];
-    return (Array.isArray(list) ? list : String(list).split(/[\n,|]+/))
-      .map(function (s) { return String(s).trim(); })
-      .filter(function (s) { return /^https?:\/\//i.test(s); })
-      .map(driveToImage)
-      .map(function (url) { return { full: url, card: url, w: 0, h: 0 }; });
+    return gallery
+      .filter(function (p) { return p && p.full; })
+      .map(function (p) {
+        return {
+          full: p.full,
+          card: p.card || p.full,
+          w: Number(p.width) || 0,
+          h: Number(p.height) || 0
+        };
+      });
   }
 
   /* The endpoint already normalises names, statuses, and the featured
