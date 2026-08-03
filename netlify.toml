@@ -19,6 +19,15 @@
   publish = "."
   functions = "netlify/functions"
 
+# cart.html is not a page, it is the shell every cart page is rendered
+# into — see netlify/functions/cart-page.mjs. On its own it shows a
+# loading message and nothing else, so it must never turn up in search
+# results competing with the real cart pages at /carts/…
+[[headers]]
+  for = "/cart.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
 # The /api/inventory path is declared inside the function itself
 # (netlify/functions/inventory.mjs) using the Functions v2 config
 # export, so no redirect rule is needed here. Legacy redirects for

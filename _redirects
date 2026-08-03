@@ -28,11 +28,25 @@
 # ─────────────────────────────────────────────────────────
 /inventory                  /inventory.html                301!
 /parts                      /parts.html                    301!
-/service-financing          /service-financing.html        301!
+/service                    /service.html                  301!
+/financing                  /financing.html                301!
+
+# Service and financing used to share one page. Google indexed that
+# address, so it keeps working and hands its ranking to the service
+# page — the half that draws the searches. The financing half is one
+# click away, and /finance below still lands there directly.
+/service-financing.html     /service.html                  301!
+/service-financing          /service.html                  301!
 /contact                    /contact.html                  301!
 /privacy                    /privacy.html                  301!
 /terms                      /terms.html                    301!
 /thank-you                  /thank-you.html                301!
+
+# Each cart's own page lives at /carts/<slug>-<record id>, served by
+# netlify/functions/cart-page.mjs. The bare /carts is not a page of its
+# own — the list of carts is the inventory page.
+/carts                      /inventory.html                301!
+/carts/                     /inventory.html                301!
 
 
 # ─────────────────────────────────────────────────────────
@@ -45,10 +59,10 @@
 /about-us                   /about.html                    301
 /contact-us                 /contact.html                  301
 /schedule-test-drive        /contact.html                  301
-/finance                    /service-financing.html        301
-/loan-application           /service-financing.html        301
-/service-department         /service-financing.html        301
-/service-request            /service-financing.html        301
+/finance                    /financing.html                301
+/loan-application           /financing.html                301
+/service-department         /service.html                  301
+/service-request            /service.html#request          301
 /lithium-battery            /parts.html                    301
 
 

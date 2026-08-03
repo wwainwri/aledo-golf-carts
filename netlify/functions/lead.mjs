@@ -24,7 +24,8 @@ const LEADS_TABLE = process.env.AIRTABLE_LEADS_TABLE || "tbl6eydRTXlkvykP6";
 const FORM_LABELS = {
   "test-drive-request": "Test Drive / General Inquiry",
   "part-request": "Part or Quote Request",
-  "cart-inquiry": "Cart Inquiry"
+  "cart-inquiry": "Cart Inquiry",
+  "service-request": "Service Request"
 };
 
 function formLabel(formType) {
@@ -35,6 +36,17 @@ function clean(value, max) {
   return String(value == null ? "" : value).trim().slice(0, max || 2000);
 }
 
+/* The service request asks which cart it is, across four fields. They
+   are worth more to whoever picks the job up as one line — "2019 Club
+   Car Onward" — than as four separate ones. */
+function describeCart(data) {
+  const label = [clean(data.year, 10), clean(data.make, 60), clean(data.model, 80)]
+    .filter(Boolean)
+    .join(" ");
+  const serial = clean(data.serial, 60);
+  return serial ? `${label} (serial ${serial})`.trim() : label;
+}
+
 /** Maps the raw posted fields (which vary per form) into one shape. */
 function normalizeLead(data) {
   return {
@@ -43,8 +55,12 @@ function normalizeLead(data) {
     email: clean(data.email, 200),
     phone: clean(data.phone, 60),
     interest: clean(data.interest || data.category, 200),
-    cart: clean(data.cart, 200),
+    /* Whichever cart this lead is about: the one they want to buy, or
+       on a service request the one they want us to look at. */
+    cart: clean(data.cart, 200) || describeCart(data),
     details: clean(data.details || data.description, 4000),
+    zip: clean(data.zip, 20),
+    preferredDate: clean(data.preferred_date, 40),
     tcpaConsent: clean(data.tcpa_consent, 20),
     pageUrl: clean(data.pageUrl, 500),
     submittedAt: new Date()
@@ -57,6 +73,8 @@ function inquiryDetails(lead) {
   if (lead.details) parts.push(lead.details);
   if (lead.interest) parts.push("Interest: " + lead.interest);
   if (lead.cart) parts.push("Cart: " + lead.cart);
+  if (lead.preferredDate) parts.push("Preferred date: " + lead.preferredDate);
+  if (lead.zip) parts.push("ZIP: " + lead.zip);
   return parts.join("\n\n");
 }
 

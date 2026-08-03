@@ -2,3 +2,7 @@ User-agent: *
 Allow: /
 
 Sitemap: https://aledogolfcarts.com/sitemap.xml
+
+# The cart pages come and go with the inventory, so their list is built
+# from the live feed rather than kept in a file. See sitemap-carts.mjs.
+Sitemap: https://aledogolfcarts.com/sitemap-carts.xml

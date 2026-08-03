@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<!--
+  ═══════════════════════════════════════════════════════════
+  ALEDO GOLF CARTS — one cart's own page
+
+  There is no per-cart file to write. Every cart in Airtable
+  already has a page, at
+
+      /carts/<year-model-color>-<record id>
+
+  and this is the shell all of them are rendered into. Add a cart
+  in the owner dashboard and its page exists a minute later; edit
+  the price and this page shows the new one. Nothing to publish.
+
+  How a request is served:
+
+    1. netlify/functions/cart-page.mjs catches /carts/…, looks the
+       cart up in the same /api/inventory feed the listing grid
+       reads, and replaces AGC:HEAD below with that cart's title,
+       description, link-preview image, and its data.
+    2. cart-page.js draws the page from that data — instantly,
+       because it is already in the HTML rather than fetched.
+
+  The head tags matter because Facebook and iMessage do not run
+  JavaScript. A link posted to Marketplace has to arrive already
+  carrying the right photo and price, which is why this page is
+  rendered on the server rather than filled in by the browser.
+
+  Opening /cart.html directly still works — the page falls back to
+  fetching the feed itself — which is what makes local preview
+  possible without running the function. That bare address is kept
+  out of search results by a header in netlify.toml.
+  ═══════════════════════════════════════════════════════════
+-->
+
+<title>Golf Cart Details | Aledo Golf Carts</title>
+<!--AGC:HEAD-->
+
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Libre+Franklin:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <a href="tel:+18177762175">📞 (817) 776-2175</a>
+  <a href="https://maps.google.com/?q=10200+E+Bankhead+Hwy,+Aledo,+TX+76008" target="_blank" rel="noopener">📍 10200 E Bankhead Hwy | Aledo, TX 76008</a>
+</div>
+
+<!-- NAV -->
+<nav class="site-nav">
+  <a href="/index.html" class="nav-logo" aria-label="Aledo Golf Carts home"><img src="/assets/logo.png" alt="Aledo Golf Carts" width="99" height="58" /></a>
+  <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="nav-menu">
+    <li><a href="/index.html">Home</a></li>
+    <li><a href="/inventory.html" class="active">Inventory</a></li>
+    <li><a href="/parts.html">Parts &amp; Batteries</a></li>
+    <li><a href="/service.html">Service</a></li>
+    <li><a href="/financing.html">Financing</a></li>
+    <li><a href="/about.html">About Us</a></li>
+    <li><a href="/contact.html" class="nav-cta">Contact Us</a></li>
+  </ul>
+</nav>
+
+<ol class="crumbs">
+  <li><a href="/index.html">Home</a></li>
+  <li><a href="/inventory.html">Inventory</a></li>
+  <li aria-current="page" id="crumb-cart">Cart</li>
+</ol>
+
+<main id="main">
+<!-- THE CART -->
+<section>
+  <div id="cart-detail">
+    <div class="cd-message">
+      <p>Loading this cart…</p>
+    </div>
+  </div>
+</section>
+
+<!-- MORE FROM THE LOT -->
+<section class="section-alt" id="related-section" hidden>
+  <div class="section-head-center">
+    <span class="section-eyebrow">Still Looking?</span>
+    <h2 class="section-title" style="margin-left:auto;margin-right:auto;">More carts on the lot right now.</h2>
+  </div>
+  <div class="inventory-grid" id="related-grid"></div>
+  <p style="text-align:center;margin-top:2.5rem;">
+    <a class="btn-outline-dark" href="/inventory.html">See the full inventory</a>
+  </p>
+</section>
+
+<!-- INQUIRY FORM -->
+<section id="inquiry" class="contact-dark">
+  <span class="section-eyebrow">Interested?</span>
+  <h2 class="section-title">Ask about this cart — <em style="color:var(--orange-2);font-style:normal;">we reply fast.</em></h2>
+  <p class="contact-sub">Tell us how to reach you and we'll confirm it's still available and set up a time for you to drive it.</p>
+
+  <form
+    class="contact-form"
+    name="cart-inquiry"
+    method="POST"
+    action="/thank-you.html"
+    data-netlify="true"
+    netlify-honeypot="bot-field"
+  >
+    <input type="hidden" name="form-name" value="cart-inquiry" />
+    <p hidden><label>Don't fill this out: <input name="bot-field" /></label></p>
+
+    <input type="text" name="cart" id="inquiry-cart" placeholder="Which cart? (e.g. 2026 Madjax Ascent)" required />
+    <input type="text" name="name" placeholder="Your name" autocomplete="name" required />
+    <input type="email" name="email" placeholder="Email" autocomplete="email" required />
+    <input type="tel" name="phone" placeholder="Phone number" autocomplete="tel" required />
+
+    <label class="consent-row">
+      <input type="checkbox" name="tcpa_consent" value="Yes" required />
+      <span>By checking this box and submitting, I consent to receive calls and text messages (SMS), including via automated technology, from Aledo Golf Carts at the number provided, regarding my inquiry. Consent is not a condition of purchase. Message &amp; data rates may apply; message frequency varies. Reply STOP to opt out or HELP for help. See our <a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms of Use</a>.</span>
+    </label>
+
+    <button type="submit" class="btn-primary" style="white-space:nowrap;flex-shrink:0;">Send Inquiry</button>
+  </form>
+  <p class="contact-note">We'll get back to you within one business day. Prefer to talk? <a href="tel:+18177762175" style="color:var(--orange-2);">(817) 776-2175</a></p>
+</section>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <div class="footer-logo"><img src="/assets/logo.png" alt="Aledo Golf Carts" width="86" height="50" loading="lazy" /></div>
+      <p style="font-size:0.85rem;line-height:1.7;max-width:32ch;">10200 E Bankhead Hwy<br />Aledo, TX 76008<br />(817) 776-2175</p>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <ul>
+        <li><a href="/index.html">Home</a></li>
+        <li><a href="/inventory.html">Inventory</a></li>
+        <li><a href="/parts.html">Parts &amp; Batteries</a></li>
+        <li><a href="/service.html">Service</a></li>
+        <li><a href="/financing.html">Financing</a></li>
+        <li><a href="/about.html">About Us</a></li>
+        <li><a href="/contact.html">Contact Us</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Parts &amp; Service</h4>
+      <ul>
+        <li><a href="/parts.html#batteries">Lithium Batteries</a></li>
+        <li><a href="/parts.html#accessories">Wheels &amp; Tires</a></li>
+        <li><a href="/parts.html#accessories">Lift Kits</a></li>
+        <li><a href="/service.html#estimator">Service Estimator</a></li>
+        <li><a href="/financing.html?tool=tradein#tools">Trade-In Estimator</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Business Hours</h4>
+      <div class="footer-hours"><span>Sunday</span><span>Closed</span></div>
+      <div class="footer-hours"><span>Mon – Fri</span><span>10am – 4pm</span></div>
+      <div class="footer-hours"><span>Saturday</span><span>By Appt.</span></div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© <span id="footer-year">2026</span> Aledo Golf Carts. All rights reserved. · Family-owned &amp; operated in Aledo, TX</span>
+    <span><a href="/privacy.html">Privacy Policy</a> · <a href="/terms.html">Terms of Use</a></span>
+    <div class="footer-credit-row">
+      <span class="footer-credit-label">Site by</span>
+      <a class="footer-credit" href="https://clearforkautomation.com" target="_blank" rel="noopener"><img src="/assets/clearfork-logo.png" alt="" />Clearfork Automation LLC</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/site.js" defer></script>
+<script src="/photo-viewer.js" defer></script>
+<script src="/cart-page.js" defer></script>
+</body>
+</html>

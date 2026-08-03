@@ -6,6 +6,65 @@
    fall back to their normal Netlify submission so nothing breaks. */
 var AGC_FORMS_ENDPOINT = '/api/lead';
 
+/* Where a cart's own page lives.
+
+   The readable part is for people and for search results; the record id
+   on the end is what actually finds the cart. Keeping the id there means
+   renaming a cart in the dashboard cannot break a link that is already
+   out in the world — the old address still resolves, and the server
+   redirects it to the new wording. Must stay in step with
+   netlify/lib/cart-slug.mjs, which builds the same address server-side. */
+function AGCCartUrl(cart) {
+  if (!cart || !cart.id) return '';
+  var words = [cart.year, cart.name, cart.color]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return '/carts/' + (words ? words + '-' : '') + cart.id;
+}
+
+/* One record from /api/inventory turned into the shape the listing grid
+   and the single-cart page both draw from. Lives here because both read
+   the same feed and must agree on what a cart is.
+
+   The endpoint has already normalised names and statuses and dropped
+   hidden carts; all that is left is the derived values the cards, the
+   filters, and the price line need. */
+function AGCCartFromApi(r) {
+  if (!r || !r.name) return null;
+
+  /* Every photo arrives in one shape:
+
+       full   the big version, for the lightbox
+       card   what a grid should load — smaller when that helps
+       w, h   intrinsic size, so the page can reserve the space */
+  var photos = (Array.isArray(r.gallery) ? r.gallery : [])
+    .filter(function (p) { return p && p.full; })
+    .map(function (p) {
+      return { full: p.full, card: p.card || p.full, w: Number(p.width) || 0, h: Number(p.height) || 0 };
+    });
+
+  var c = {
+    id: r.id || '',
+    name: r.name,
+    year: r.year || '',
+    price: r.price || '',
+    seats: r.seats || '',
+    battery: r.battery || '',
+    color: r.color || '',
+    description: r.description || '',
+    photos: photos,
+    status: r.status === 'pending' || r.status === 'sold' ? r.status : 'available',
+    featured: r.featured === true
+  };
+  c.priceNum = parseFloat(String(c.price).replace(/[$,\s]/g, ''));
+  c.seatsNum = parseInt(c.seats, 10) || null;
+  c.type = /used|pre.?owned/i.test(r.type || '') ? 'Used' : (/new/i.test(r.type || '') ? 'New' : '');
+  return c;
+}
+
 (function () {
   'use strict';
 

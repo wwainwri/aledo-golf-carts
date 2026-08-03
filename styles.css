@@ -940,6 +940,30 @@ section { padding: 5.5rem 5vw; }
 
 .contact-note { font-size: 0.8rem; color: rgba(255,255,255,0.4); }
 
+/* The service request form asks for more than a name and a number, so it
+   gets more room and is broken into labelled groups — ten fields in one
+   undifferentiated block is what makes people abandon a form. */
+.contact-form.form-wide { max-width: 780px; }
+
+.form-legend {
+  flex: 1 1 100%;
+  text-align: left;
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--orange-2);
+  margin-top: 0.75rem;
+}
+.form-legend:first-child { margin-top: 0; }
+
+/* Half-width on a roomy form, full width once it stacks. */
+.contact-form .field-half { flex: 1 1 calc(50% - 0.5rem); min-width: 200px; }
+
+/* Without this the browser draws a black calendar icon on a black
+   field, and the control looks empty until you click it. */
+.contact-form input[type="date"] { color-scheme: dark; }
+
 .contact-details {
   display: flex;
   justify-content: center;
@@ -1130,6 +1154,148 @@ footer {
 .bot-crumbs { font-size: 0.75rem; color: var(--gray); margin-bottom: 0.9rem; }
 .bot-crumbs button { background:none;border:none;color:var(--orange);font-weight:700;cursor:pointer;font-size:0.75rem;padding:0; }
 
+/* ── SINGLE CART PAGE ── */
+.cart-detail {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 3rem;
+  align-items: start;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.cd-stage {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cd-stage img.cd-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cd-stage img.cart-placeholder { width: 40%; height: auto; opacity: 0.45; object-fit: contain; }
+
+/* The whole photo opens the full-size view, same as on a grid card. */
+.cd-zoom {
+  position: absolute;
+  inset: 0;
+  background: none;
+  border: 0;
+  cursor: zoom-in;
+  padding: 0;
+}
+.cd-zoom:focus-visible { outline: 3px solid var(--orange); outline-offset: -3px; }
+.cd-stage .photo-nav { z-index: 2; opacity: 1; }
+
+.cd-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+}
+.cd-thumb {
+  aspect-ratio: 4 / 3;
+  border: 2px solid transparent;
+  border-radius: 7px;
+  overflow: hidden;
+  padding: 0;
+  background: var(--cream);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.cd-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cd-thumb:hover { border-color: var(--orange-2); }
+.cd-thumb.on { border-color: var(--orange); }
+
+.cd-info .cart-badges { position: static; margin-bottom: 0.9rem; }
+.cd-info h1 { font-size: 2rem; line-height: 1.15; margin-bottom: 0.6rem; }
+.cd-price {
+  font-family: 'Oswald', sans-serif;
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 0.35rem;
+}
+.cd-price span { font-size: 1rem; font-weight: 400; color: var(--gray); }
+.cd-price-note { font-size: 0.8rem; color: var(--gray); margin-bottom: 1.5rem; }
+.cd-price-note a { color: var(--orange); }
+
+.cd-specs {
+  border-top: 1px solid var(--line);
+  margin-bottom: 1.5rem;
+}
+.cd-spec {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.7rem 0.2rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+.cd-spec dt { color: var(--gray); }
+.cd-spec dd { font-weight: 600; text-align: right; }
+
+.cd-desc { color: var(--gray); font-size: 0.95rem; line-height: 1.8; margin-bottom: 1.75rem; max-width: 60ch; }
+
+.cd-actions { display: flex; flex-direction: column; gap: 0.7rem; }
+.cd-actions .btn-primary,
+.cd-actions .btn-outline-dark { text-align: center; justify-content: center; }
+.cd-sold-note {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-left: 3px solid #9C2B18;
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+  font-size: 0.88rem;
+  color: var(--gray);
+  line-height: 1.7;
+  margin-bottom: 1.25rem;
+}
+
+.cd-reassure {
+  list-style: none;
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.cd-reassure li { font-size: 0.85rem; color: var(--gray); display: flex; gap: 0.55rem; align-items: flex-start; }
+.cd-reassure li::before { content: '✓'; color: var(--orange); font-weight: 700; flex-shrink: 0; }
+
+/* Shown until the cart's data is in hand, and in place of it when the
+   feed cannot be reached or the address names a cart that is gone. */
+.cd-message {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--gray);
+}
+.cd-message h1 { font-size: 1.5rem; color: var(--ink); margin-bottom: 0.75rem; }
+.cd-message p { margin-bottom: 1.5rem; }
+
+@media (max-width: 900px) {
+  .cart-detail { grid-template-columns: 1fr; gap: 2rem; }
+  .cd-info h1 { font-size: 1.6rem; }
+  .cd-price { font-size: 1.75rem; }
+
+  /* Stacked, the thumbnails sit between the photo and the price. A grid
+     of them would be several rows deep and push the price off the
+     screen, so on a phone they become one row that scrolls sideways. */
+  .cd-thumbs {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .cd-thumbs::-webkit-scrollbar { display: none; }
+  .cd-thumb { flex: 0 0 78px; }
+}
+
 /* ── ANIMATIONS ── */
 @media (prefers-reduced-motion: no-preference) {
   .fade-up {
@@ -1148,7 +1314,21 @@ footer {
   .footer-grid { grid-template-columns: 1fr 1fr; }
 }
 
-@media (max-width: 760px) {
+/* ── NAV BREAKPOINT ──
+   Seven items since service and financing split into their own pages.
+   Laid out end to end they need about 940px next to the logo, so the
+   menu collapses at 960 rather than the old 760 — below that the row
+   wrapped onto two lines. The band just above it gets tighter spacing
+   so the last item never touches the logo.
+
+   Only the navigation moves; the other 760px rules on this page are
+   about content and stay where they are. */
+@media (max-width: 1080px) and (min-width: 961px) {
+  .nav-links { gap: 1.05rem; }
+  .nav-cta { padding: 0.55rem 0.9rem; }
+}
+
+@media (max-width: 960px) {
   .nav-toggle { display: flex; }
   .nav-links {
     display: none;
