@@ -266,8 +266,75 @@ check("a call with no summary is not an error",
 r = await ask("?callId=../../secrets");
 check("a malformed call id is refused", r.status === 400, r.status);
 
-/* ── 8. number matching ──────────────────────────────────── */
-section("8. Matching numbers written different ways");
+/* ── 8. threads ──────────────────────────────────────────── */
+section("8. Grouping into conversation threads");
+
+routes = baseRoutes({
+  "/messages": (href) => href.includes(encodeURIComponent(THEM))
+    ? { data: [
+        { id: "M1", direction: "incoming", from: THEM, text: "Is the blue Madjax still there?", createdAt: iso(5) },
+        { id: "M2", direction: "outgoing", to: [THEM], text: "It is — come by today.", createdAt: iso(4) }
+      ] }
+    : { data: [{ id: "M3", direction: "incoming", from: OTHER, text: "what time do yall close", createdAt: iso(60) }] },
+  "/calls": (href) => href.includes(encodeURIComponent(OTHER))
+    ? { data: [{ id: "C1", direction: "incoming", participants: [OTHER, OURS], status: "missed", createdAt: iso(55) }] }
+    : { data: [] }
+});
+r = await ask();
+body = await r.json();
+
+check("threads come back", Array.isArray(body.threads) && body.threads.length === 2,
+  body.threads && body.threads.length);
+
+const dale = body.threads.find((t) => t.with === THEM);
+const stranger = body.threads.find((t) => t.with === OTHER);
+
+check("one entry per person, not per message",
+  dale && dale.items.length === 2, dale && dale.items.length);
+check("the named contact keeps their name", dale && dale.withName === "Dale Brooks",
+  dale && dale.withName);
+check("newest thread sorts first", body.threads[0].with === THEM, body.threads[0].with);
+check("preview is the latest message", dale && dale.preview === "It is — come by today.",
+  dale && dale.preview);
+check("a missed call previews as one", stranger && stranger.preview === "Missed call",
+  stranger && stranger.preview);
+check("counts are per thread",
+  dale && dale.counts.texts === 2 && dale.counts.calls === 0 &&
+  stranger && stranger.counts.missed === 1,
+  { dale: dale && dale.counts, stranger: stranger && stranger.counts });
+
+check("an unreturned missed call is flagged on its thread",
+  stranger && stranger.unreturned === true, stranger && stranger.unreturned);
+check("a thread we answered is not flagged",
+  dale && dale.unreturned === false, dale && dale.unreturned);
+
+check("deep link points at that exact Quo thread",
+  dale && dale.quoUrl === "https://my.quo.com/inbox/PN1/c/CN1", dale && dale.quoUrl);
+check("the flat timeline still exists for the rest of the dashboard",
+  Array.isArray(body.activity) && body.activity.length === 4, body.activity && body.activity.length);
+
+/* A thread Quo gave us no conversation id for must still render, and
+   must not produce a link that 404s in Quo. */
+routes = baseRoutes({
+  "/conversations": { data: [{ phoneNumberId: "PN1", participants: [THEM], lastActivityAt: iso(5) }] },
+  "/messages": { data: [{ id: "M9", direction: "incoming", from: THEM, text: "hello", createdAt: iso(5) }] }
+});
+r = await ask();
+body = await r.json();
+check("a thread with no conversation id still appears",
+  body.threads.length === 1, body.threads.length);
+check("and falls back to the inbox rather than a broken link",
+  body.threads[0].quoUrl === "https://my.quo.com/inbox", body.threads[0].quoUrl);
+
+check("threads are empty, not undefined, before Quo is connected", true);
+delete process.env.QUO_API_KEY;
+r = await ask();
+body = await r.json();
+check("  ...confirmed", Array.isArray(body.threads) && body.threads.length === 0, body.threads);
+process.env.QUO_API_KEY = "stub-quo-key";
+
+/* ── 9. number matching ──────────────────────────────────── */
+section("9. Matching numbers written different ways");
 
 check("+1 E.164 and a dashed local number match",
   mod.numberKey("+18175551234") === mod.numberKey("817-555-1234"));

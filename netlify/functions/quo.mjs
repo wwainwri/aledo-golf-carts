@@ -42,6 +42,15 @@ export const config = { path: "/api/quo" };
 
 const API = "https://api.quo.com/v1";
 
+/* Where Quo's own web app lives, for deep links into a thread.
+
+   The dashboard shows conversations but deliberately does not send:
+   replying through the API is billed per message against a prepaid
+   balance, while replying in Quo is included in the subscription. So
+   "Reply in Quo" hands the owner off to the real thread rather than
+   charging them for the privilege of typing somewhere else. */
+const QUO_APP = (process.env.QUO_APP_ORIGIN || "https://my.quo.com").replace(/\/+$/, "");
+
 /* How far back to look, and how wide to cast. Both are a trade
    against Quo's rate limit — see the fan-out note above. */
 const DAYS_BACK = Number(process.env.QUO_DAYS_BACK) || 14;
@@ -221,6 +230,98 @@ function findUnreturned(activity) {
   });
 }
 
+/** A one-line gist of a thread, for the list before it is opened. */
+function previewOf(item) {
+  if (!item) return "";
+  if (item.kind === "text") {
+    const text = item.text.replace(/\s+/g, " ").trim();
+    return text.length > 120 ? text.slice(0, 119) + "…" : text;
+  }
+  if (item.missed) return item.direction === "in" ? "Missed call" : "No answer";
+  const length = durationWords(item.duration);
+  return (item.direction === "in" ? "Incoming call" : "Outgoing call") + (length ? " · " + length : "");
+}
+
+function durationWords(seconds) {
+  if (!seconds) return "";
+  if (seconds < 60) return seconds + "s";
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return minutes + "m" + (rest ? " " + rest + "s" : "");
+}
+
+/**
+ * The same activity, grouped the way a person actually reads it: one
+ * entry per person, newest first, rather than one long interleaved
+ * list where a single customer's four messages are scattered among
+ * everyone else's.
+ *
+ * Grouped by phone number rather than by Quo's conversation id, because
+ * the timeline is deduplicated across threads first — the same customer
+ * reaching a group thread and a direct one is still one person to call
+ * back.
+ */
+function threadsFrom(activity, conversations, unreturned) {
+  /* Which Quo thread each number belongs to, for the deep link. */
+  const threadOf = new Map();
+  for (const conversation of conversations) {
+    const key = numberKey(conversation.other);
+    if (key && !threadOf.has(key)) threadOf.set(key, conversation);
+  }
+
+  const owed = new Set(unreturned.map((item) => numberKey(item.with)));
+
+  const groups = new Map();
+  for (const item of activity) {
+    const key = numberKey(item.with);
+    if (!key) continue;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+
+  const threads = [];
+  for (const [key, items] of groups) {
+    /* activity is already newest-first, so the group inherits that. */
+    const newest = items[0];
+    const conversation = threadOf.get(key);
+
+    const counts = { texts: 0, calls: 0, missed: 0 };
+    for (const item of items) {
+      if (item.kind === "text") counts.texts++;
+      else {
+        counts.calls++;
+        if (item.missed && item.direction === "in") counts.missed++;
+      }
+    }
+
+    threads.push({
+      /* Quo's own id where we have it; otherwise the number, so a
+         thread still has a stable key to render against. */
+      id: (conversation && conversation.id) || "num-" + key,
+      phoneNumberId: (conversation && conversation.phoneNumberId) || "",
+      with: newest.with,
+      withPretty: newest.withPretty,
+      withName: newest.withName || "",
+      lastAt: newest.at,
+      lastDirection: newest.direction,
+      lastKind: newest.kind,
+      preview: previewOf(newest),
+      /* The whole point of the panel: this customer rang, got nothing,
+         and nobody has been back to them. */
+      unreturned: owed.has(key),
+      counts,
+      items,
+      /* Empty when Quo did not give us a conversation id — the
+         dashboard falls back to the inbox rather than a broken link. */
+      quoUrl: conversation && conversation.id && conversation.phoneNumberId
+        ? `${QUO_APP}/inbox/${encodeURIComponent(conversation.phoneNumberId)}/c/${encodeURIComponent(conversation.id)}`
+        : `${QUO_APP}/inbox`
+    });
+  }
+
+  return threads.sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+}
+
 async function loadActivity(key) {
   /* 1. our own numbers */
   const numbersPayload = await quo("/phone-numbers", key);
@@ -254,7 +355,9 @@ async function loadActivity(key) {
       const other = (c.participants || []).find((p) => !ours.has(numberKey(p))) ||
         (c.participants || [])[0] || "";
       if (c.name && other) names.byKey[numberKey(other)] = c.name;
-      return { phoneNumberId: c.phoneNumberId, other, lastActivityAt: c.lastActivityAt };
+      /* c.id is carried so the dashboard can link straight at this
+         thread in Quo — see threadsFrom below. */
+      return { id: c.id, phoneNumberId: c.phoneNumberId, other, lastActivityAt: c.lastActivityAt };
     })
     .filter((c) => c.other && c.phoneNumberId)
     .sort((a, b) => new Date(b.lastActivityAt || 0) - new Date(a.lastActivityAt || 0))
@@ -288,11 +391,13 @@ async function loadActivity(key) {
   }
 
   const activity = [...byId.values()].sort((a, b) => new Date(b.at) - new Date(a.at));
+  const unreturned = findUnreturned(activity);
 
   return {
     numbers,
     activity,
-    unreturned: findUnreturned(activity),
+    threads: threadsFrom(activity, conversations, unreturned),
+    unreturned,
     stats: buildStats(activity)
   };
 }
@@ -336,7 +441,7 @@ export default async function handler(request) {
       ok: true,
       configured: false,
       message: "Quo is not connected yet. Add QUO_API_KEY in Netlify to see calls and texts.",
-      numbers: [], activity: [], unreturned: [], stats: emptyStats()
+      numbers: [], activity: [], threads: [], unreturned: [], stats: emptyStats()
     }, 200);
   }
 
