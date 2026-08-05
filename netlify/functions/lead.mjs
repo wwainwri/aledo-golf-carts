@@ -89,6 +89,13 @@ async function createAirtableLead(lead) {
     "Email Address": lead.email,
     "Phone Number": lead.phone,
     "Inquiry Details": inquiryDetails(lead),
+    /* A single select the dashboard can filter and badge on — the
+       [Label] prefix in Inquiry Details is for a human skimming
+       Airtable directly, this is for code. typecast:true lets a new
+       label here create its own option rather than erroring, but the
+       four values must still match FORM_LABELS or a lead lands
+       "New form type" with no styling. */
+    "Request Type": formLabel(lead.formType),
     "Submission Date": lead.submittedAt.toISOString().slice(0, 10),
     /* Lead Source is a channel (Website Form / Phone Call / Walk-In),
        not a form name. Which form it was goes in Inquiry Details. */

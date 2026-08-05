@@ -39,6 +39,16 @@ function str(value) {
   return value == null ? "" : String(value).trim();
 }
 
+/* Every lead written before the Request Type field existed still has
+   its type as a "[Label]" prefix on Inquiry Details — lead.mjs has
+   always written that, for a human reading Airtable directly. Reusing
+   it here means those older leads pick up a badge too, with nothing
+   to backfill by hand. */
+function typeFromDetails(details) {
+  const match = /^\[([^\]]+)\]/.exec(details);
+  return match ? match[1] : "";
+}
+
 /** Airtable omits empty fields, so read defensively. */
 function toLead(record) {
   const f = record.fields || {};
@@ -48,6 +58,10 @@ function toLead(record) {
     email: str(f["Email Address"]),
     phone: str(f["Phone Number"]),
     details: str(f["Inquiry Details"]),
+    /* Falls back to sniffing the [Label] prefix already inside Inquiry
+       Details, so leads written before this field existed still get a
+       type instead of showing up unlabeled. */
+    type: str(f["Request Type"]) || typeFromDetails(str(f["Inquiry Details"])),
     date: str(f["Submission Date"]) || str(record.createdTime).slice(0, 10),
     createdTime: record.createdTime || "",
     source: str(f["Lead Source"]),
