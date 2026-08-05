@@ -140,7 +140,7 @@ function headFor(cart, url) {
 
   /* The first photo is the link preview. A cart with none falls back to
      the site card rather than to nothing, because a link with no image
-     at all collapses to a bare grey row on Facebook. */
+     at all collapses to a bare gray row on Facebook. */
   const cover = (cart.gallery && cart.gallery[0]) || null;
   const image = cover ? cover.full : FALLBACK_IMAGE;
   const dimensions = cover && cover.width && cover.height

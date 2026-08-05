@@ -1,4 +1,4 @@
-/* Generates the wheel and tyre illustrations for the parts page.
+/* Generates the wheel and tire illustrations for the parts page.
 
    Drawn rather than photographed, for the same reasons as the sound bar:
    no copyright question over a manufacturer's product shot, no brand name
@@ -9,7 +9,7 @@
    pairs of coordinates is not.
 
    The 3/4 view is faked the way it is in a technical illustration: the
-   far rim of the tyre is drawn first, offset sideways, and the near face
+   far rim of the tire is drawn first, offset sideways, and the near face
    goes on top. The crescent left visible between the two reads as the
    depth of the tread. */
 
@@ -20,8 +20,8 @@ const W = 800, H = 600;
 
 const n = (v) => Number(v).toFixed(1);
 
-/* Shared scenery: a light studio sweep, which is how every tyre catalogue
-   shoots this. A black tyre on a dark ground is a silhouette — the first
+/* Shared scenery: a light studio sweep, which is how every tire catalog
+   shoots this. A black tire on a dark ground is a silhouette — the first
    attempt proved that, and no amount of tread detail rescues it. */
 function backdrop() {
   return `
@@ -64,8 +64,8 @@ function commonDefs(extra = "") {
 
 /* ── The tread band, as a closed path ──
    Used both to fill the band and as a clip, so the blocks drawn into it
-   cannot escape past the tyre's outline. Without the clip they overshoot
-   the far rim and the tyre reads as a comb rather than a tyre. */
+   cannot escape past the tire's outline. Without the clip they overshoot
+   the far rim and the tire reads as a comb rather than a tire. */
 function bandPath(cx, cy, rx, ry, dx, dy) {
   return (
     `M ${n(cx)} ${n(cy - ry)} ` +
@@ -78,7 +78,7 @@ function bandPath(cx, cy, rx, ry, dx, dy) {
 /* ── Tread blocks across the band ──
    Each block runs from the near rim towards the far one, following the
    direction the carcass recedes. Only the arc facing the viewer is drawn;
-   anything on the far side is behind the tyre. */
+   anything on the far side is behind the tire. */
 function treadBlocks({ cx, cy, rx, ry, dx, dy, fromDeg, toDeg, count, inset }) {
   const out = [];
   const pad = inset === undefined ? 6 : inset;
@@ -111,7 +111,7 @@ function wheelSvg() {
   /* Near face, turned a little towards the viewer */
   const cx = 336, cy = 290, rx = 192, ry = 246;
   /* How far the far rim sits behind — this is the apparent tread width.
-     Keep it modest: too much and the tyre reads as a barrel. */
+     Keep it modest: too much and the tire reads as a barrel. */
   const dx = 112, dy = 12;
   const spokes = 14;
 
@@ -145,8 +145,8 @@ function wheelSvg() {
   }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"
-     aria-label="Illustration of an aftermarket golf cart wheel with an all-terrain tyre">
-  <title>Aftermarket golf cart wheel and all-terrain tyre</title>
+     aria-label="Illustration of an aftermarket golf cart wheel with an all-terrain tire">
+  <title>Aftermarket golf cart wheel and all-terrain tire</title>
   ${commonDefs(`
     <linearGradient id="rim" x1="0.2" y1="0" x2="0.8" y2="1">
       <stop offset="0" stop-color="#2b3035"/>
@@ -160,7 +160,7 @@ function wheelSvg() {
     </linearGradient>`)}
   ${backdrop()}
 
-  <!-- Far rim of the tyre, offset to give the carcass its width -->
+  <!-- Far rim of the tire, offset to give the carcass its width -->
   <ellipse cx="${n(cx + dx)}" cy="${n(cy + dy)}" rx="${rx}" ry="${ry}" fill="#0a0b0c"/>
 
   <!-- The tread band: the crescent between far rim and near face -->
@@ -213,7 +213,7 @@ function wheelSvg() {
 }
 
 /* ══════════════ 2. TYRE ONLY ══════════════ */
-function tyreSvg() {
+function tireSvg() {
   /* Laid over further than the wheel, so the tread is the subject and the
      barrel is visible through the middle. */
   const cx = 322, cy = 292, rx = 166, ry = 242;
@@ -221,8 +221,8 @@ function tyreSvg() {
   const bandRx = 112, bandRy = 172;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img"
-     aria-label="Illustration of an all-terrain golf cart tyre showing the tread pattern">
-  <title>All-terrain golf cart tyre</title>
+     aria-label="Illustration of an all-terrain golf cart tire showing the tread pattern">
+  <title>All-terrain golf cart tire</title>
   ${commonDefs(`
     <radialGradient id="barrel" cx="0.42" cy="0.4" r="0.75">
       <stop offset="0" stop-color="#0a0b0c"/>
@@ -239,7 +239,7 @@ function tyreSvg() {
   <path d="${bandPath(cx, cy, rx, ry, dx, dy)}" fill="url(#tread)"/>
 
   <!-- Blocks, clipped to the band, with a circumferential groove down the
-       centre — which is what an all-terrain tread looks like, rather than
+       center — which is what an all-terrain tread looks like, rather than
        one row of teeth. -->
   <g clip-path="url(#bandClip)">
     ${treadBlocks({ cx, cy, rx, ry, dx, dy, fromDeg: -90, toDeg: 90, count: 30, inset: 4 })}
@@ -278,9 +278,9 @@ function tyreSvg() {
 }
 
 fs.writeFileSync(OUT + "acc-wheels.svg", wheelSvg(), "utf8");
-fs.writeFileSync(OUT + "acc-tires.svg", tyreSvg(), "utf8");
+fs.writeFileSync(OUT + "acc-tires.svg", tireSvg(), "utf8");
 
-[["acc-wheels.svg", wheelSvg()], ["acc-tires.svg", tyreSvg()]].forEach(([f, s]) => {
+[["acc-wheels.svg", wheelSvg()], ["acc-tires.svg", tireSvg()]].forEach(([f, s]) => {
   const open = (s.match(/<[a-zA-Z]/g) || []).length;
   const close = (s.match(/<\//g) || []).length + (s.match(/\/>/g) || []).length;
   console.log(`  ${f.padEnd(18)} ${String(s.length).padStart(6)} bytes  tags ${open}/${close} ${open === close ? "balanced" : "*** UNBALANCED ***"}`);
