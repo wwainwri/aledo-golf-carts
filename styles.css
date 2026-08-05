@@ -190,6 +190,100 @@ nav.site-nav {
 section { padding: 5.5rem 5vw; }
 .section-alt { background: var(--cream); }
 
+/* ── AUTHORIZED DEALER STRIP ──
+   Namespaced dealer-* rather than brand-* because .brand-strip already
+   exists further down (the "fits most major brands" pill list on
+   parts.html) — reusing that name let its span/padding/radius rules
+   silently bleed into this section since both are single-class
+   selectors and the older rule wins ties by appearing later in file
+   order. Different name, no collision, nothing on parts.html touched.
+
+   A dark band, matching the nav and footer, because most of these
+   brands' own logo files are white-only — built for exactly this kind
+   of dark background. The three that are dark-colored (Dach, Nivel,
+   DoorWorks) sit on their own small white chip instead of clashing
+   with the strip behind them; everything else runs straight on the
+   dark background at full brand color. */
+.dealer-strip {
+  padding: 1.75rem 0;
+  background: var(--black);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  overflow: hidden;
+}
+.dealer-strip-label {
+  flex: none;
+  padding-left: 5vw;
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  white-space: nowrap;
+}
+
+.dealer-marquee {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  /* Fades the strip into the dark background at both edges rather than
+     cutting a logo off mid-scroll. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+.dealer-track {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  padding-right: 3rem;
+  flex: none;
+  animation: dealer-scroll 32s linear infinite;
+}
+/* Two copies sit side by side; scrolling exactly one copy's width
+   loops seamlessly into the second, so the strip never visibly jumps
+   or shows a gap. */
+@keyframes dealer-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
+}
+
+/* An owner reading logos wants them to hold still, not chase them. */
+.dealer-strip:hover .dealer-track,
+.dealer-strip:focus-within .dealer-track { animation-play-state: paused; }
+
+.dealer-track img {
+  height: 30px;
+  width: auto;
+  flex: none;
+  max-width: none;
+  opacity: 0.92;
+}
+
+.dealer-chip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 0.4rem 0.85rem;
+  background: #fff;
+  border-radius: 6px;
+}
+.dealer-chip img { height: 22px; opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dealer-track { animation: none; }
+  .dealer-marquee { overflow-x: auto; }
+}
+
+@media (max-width: 760px) {
+  .dealer-strip { gap: 1rem; }
+  .dealer-strip-label { padding-left: 5vw; font-size: 0.7rem; }
+  .dealer-track img { height: 24px; }
+  .dealer-chip img { height: 18px; }
+}
+
 .section-eyebrow {
   font-size: 0.78rem;
   font-weight: 700;
