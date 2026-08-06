@@ -951,35 +951,79 @@ section { padding: 5.5rem 5vw; }
 .value-item { display: flex; gap: 0.875rem; align-items: flex-start; color: var(--ink); font-size: 0.9375rem; }
 .value-check { width: 20px; height: 20px; background: rgba(227,102,35,0.14); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; color: var(--orange); font-size: 0.7rem; }
 
-/* ── TESTIMONIALS ── */
-.testimonial-scroll {
-  display: flex;
-  gap: 1.25rem;
-  overflow-x: auto;
-  padding-bottom: 1rem;
-  scroll-snap-type: x mandatory;
-}
-.testimonial-scroll::-webkit-scrollbar { height: 6px; }
-.testimonial-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+/* The About section used to split into two columns, with reviews
+   filling the second — now that reviews are their own section, About
+   reads as plain intro copy, so it gets the same centered treatment
+   as every other single-column text intro on the page. */
+.about-solo { max-width: 640px; margin: 0 auto; text-align: center; }
+.about-solo .about-values { text-align: left; max-width: 460px; margin-left: auto; margin-right: auto; }
 
-.quote-card {
+/* ── GOOGLE REVIEWS ──
+   Built to match how a live Google-reviews widget actually behaves —
+   star row, avatar, Google attribution, arrows, dots — rather than
+   the static two-up scroller this replaced. There is no live feed
+   behind it: Google's own API caps at 5 reviews per business and its
+   Maps UI blocks reading reviews without being signed in, so this is
+   a fixed set of the dealership's real 5-star reviews, presented the
+   way a live feed would present them. */
+.reviews-summary {
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  flex-wrap: wrap; margin-top: 1rem; font-size: 0.92rem; color: var(--gray);
+}
+.reviews-stars { display: inline-flex; gap: 2px; color: #F5B400; }
+.reviews-summary strong { color: var(--ink); font-weight: 700; }
+.reviews-summary a { color: var(--orange); font-weight: 600; }
+.reviews-summary a:hover { text-decoration: underline; }
+.google-g { flex-shrink: 0; }
+
+.review-carousel {
+  display: flex; align-items: center; gap: 1rem;
+  max-width: 760px; margin: 2.75rem auto 0;
+}
+.review-viewport { flex: 1; overflow: hidden; }
+.review-track { display: flex; transition: transform 0.45s ease; }
+.review-card {
+  flex: 0 0 100%;
   background: var(--cream);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 1.75rem;
-  min-width: 300px;
-  max-width: 340px;
-  flex-shrink: 0;
-  scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
+  border-radius: 12px;
+  padding: 2.25rem;
+  text-align: center;
+}
+.review-card-stars { color: #F5B400; letter-spacing: 0.2em; font-size: 1.1rem; margin-bottom: 1rem; }
+.review-text { font-size: 1rem; line-height: 1.7; color: var(--ink); max-width: 56ch; margin: 0 auto 1.5rem; }
+.review-attr { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+.review-avatar {
+  width: 42px; height: 42px; border-radius: 50%; background: var(--orange); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem;
+}
+.review-who { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; }
+.review-who strong { font-size: 0.92rem; color: var(--ink); }
+.review-source {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.76rem; color: var(--gray);
 }
 
-.quote-mark { font-family: 'Oswald', sans-serif; font-size: 2.5rem; color: var(--orange); line-height: 1; opacity: 0.5; margin-bottom: 0.5rem; }
-.quote-text { font-size: 0.92rem; line-height: 1.6; margin-bottom: 1.25rem; color: var(--ink); flex: 1; }
-.quote-attr { font-size: 0.82rem; color: var(--gray); display: flex; align-items: center; gap: 0.6rem; }
-.quote-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--orange); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
-.quote-attr strong { color: var(--ink); }
+.review-arrow {
+  flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.review-arrow:hover { border-color: var(--orange); color: var(--orange); }
+
+.review-dots { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; }
+.review-dots button {
+  width: 8px; height: 8px; border-radius: 50%; border: none; padding: 0;
+  background: var(--line); cursor: pointer;
+}
+.review-dots button.active { background: var(--orange); width: 22px; border-radius: 4px; transition: width 0.2s, background 0.2s; }
+
+@media (max-width: 640px) {
+  .review-carousel { gap: 0.5rem; }
+  .review-card { padding: 1.5rem 1.25rem; }
+  .review-arrow { width: 34px; height: 34px; }
+}
 
 /* ── CTA / CONTACT ── */
 .contact-dark {
