@@ -146,7 +146,9 @@
         '<h1>' + esc(title) + '</h1>' +
         priceBlock(c) +
         specsHtml(c) +
-        (c.description ? '<p class="cd-desc">' + esc(c.description) + '</p>' : '') +
+        /* The full write-up belongs on the cart's own page — the short
+           version is for the grid this page was clicked through from. */
+        ((c.longDescription || c.description) ? '<p class="cd-desc">' + esc(c.longDescription || c.description) + '</p>' : '') +
         actionsHtml(c, title) +
       '</div>' +
     '</div>';
@@ -260,7 +262,7 @@
       'category': 'Golf Cart',
       'url': location.href
     };
-    if (c.description) product.description = c.description;
+    if (c.longDescription || c.description) product.description = c.longDescription || c.description;
     if (c.color) product.color = c.color;
     if (c.photos.length) product.image = c.photos.map(function (p) { return p.full; });
     if (!isNaN(c.priceNum) && c.priceNum > 0) {

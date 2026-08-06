@@ -52,7 +52,12 @@ const WRITABLE = {
   Type: (v) => oneOf(v, ["New", "Used"]),
   Battery: (v) => text(v, 60),
   Color: (v) => text(v, 60),
+  /* The full write-up, shown on the cart's own page. */
   Description: (v) => text(v, 2000),
+  /* A line or two for the inventory grid and homepage cards, where a
+     full paragraph would crowd the layout. Optional — inventory.mjs
+     falls back to Description everywhere this is blank. */
+  "Short Description": (v) => text(v, 400),
   /* The photo gallery. Uploading is a separate endpoint —
      Airtable takes file bytes at a different host — so all this does is
      reorder and delete, by sending back the ids to keep, in the order

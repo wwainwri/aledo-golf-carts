@@ -143,7 +143,28 @@ function toCart(record, forOwner) {
     type: String(pick(fields, "type", "condition")).trim(),
     battery: String(pick(fields, "battery")).trim(),
     color: String(pick(fields, "color", "colour")).trim(),
-    description: String(pick(fields, "description", "notes", "details")).trim(),
+    /* Two lengths of the same idea. The long one is what the owner
+       writes in the "Description" field Airtable has always had —
+       full detail, meant for the cart's own page. "Short Description"
+       is new and optional: a line or two for the inventory grid and
+       homepage cards, where a paragraph would crowd the layout.
+
+       Neither field is required to have both. A cart with only a long
+       description shows that everywhere; the card view is not left
+       blank just because nobody wrote a short version yet. */
+    description: String(
+      pick(fields, "short description") || pick(fields, "description", "notes", "details")
+    ).trim(),
+    longDescription: String(
+      pick(fields, "description", "notes", "details") || pick(fields, "short description")
+    ).trim(),
+    /* Both raw cells, unmerged — what the dashboard's edit form shows
+       and saves. Using either of the two computed fields above there
+       instead would pre-fill one field's text into the other whenever
+       just one was empty, and the next save would write it back to
+       Airtable as if someone had actually typed it there. */
+    shortDescription: String(pick(fields, "short description")).trim(),
+    descriptionRaw: String(pick(fields, "description", "notes", "details")).trim(),
     /* Plain list of full-size URLs. Everything that reads photos without
        caring about thumbnails or sizes — the Post Queue, the dashboard
        table, schema.org — uses this. */

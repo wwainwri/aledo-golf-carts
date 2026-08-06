@@ -67,7 +67,11 @@ function titleOf(cart) {
    Facebook. The owner's own description when there is one, because it
    is always better than anything assembled from fields. */
 function descriptionOf(cart) {
-  if (cart.description) return cart.description.replace(/\s+/g, " ").trim().slice(0, 300);
+  /* The long write-up over the short one — this page's own meta tags
+     should describe what the page actually says, not the blurb the
+     inventory grid used to link here. */
+  const text = cart.longDescription || cart.description;
+  if (text) return text.replace(/\s+/g, " ").trim().slice(0, 300);
 
   const parts = [];
   if (cart.type) parts.push(cart.type.toLowerCase());
