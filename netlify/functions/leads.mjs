@@ -142,7 +142,22 @@ export default async function handler(request) {
       return json({ ok: true, id, status }, 200);
     }
 
-    return json({ ok: false, error: "GET to list leads, PATCH to update one." }, 405);
+    if (request.method === "DELETE") {
+      const id = str(new URL(request.url).searchParams.get("id"));
+      if (!/^rec[A-Za-z0-9]+$/.test(id)) {
+        return json({ ok: false, error: "invalid", message: "A valid lead id is required." }, 400);
+      }
+
+      /* Airtable takes the record to delete as a query param, not a
+         body — the one write in this file that isn't JSON in, JSON
+         out. There is no undo once this succeeds; the dashboard is
+         the thing standing between a stray click and a lost lead. */
+      await airtable("DELETE", `${BASE_ID}/${LEADS_TABLE}?records[]=${encodeURIComponent(id)}`);
+
+      return json({ ok: true, id }, 200);
+    }
+
+    return json({ ok: false, error: "GET to list leads, PATCH to update one, DELETE to remove one." }, 405);
   } catch (error) {
     return json({
       ok: false,

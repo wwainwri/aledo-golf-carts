@@ -13,7 +13,7 @@ export function json(body, status, extraHeaders) {
       "Content-Type": "application/json; charset=utf-8",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Content-Type, X-Owner-Key",
-      "Access-Control-Allow-Methods": "GET, PATCH, POST, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, PATCH, POST, DELETE, OPTIONS",
       /* Never cached. These responses are owner-only and often
          contain customer contact details. */
       "Cache-Control": "no-store",

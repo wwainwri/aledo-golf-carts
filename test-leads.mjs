@@ -47,8 +47,13 @@ const records = [
   }
 ];
 
-globalThis.fetch = async (url) => {
+let calls = [];
+globalThis.fetch = async (url, init) => {
+  calls.push({ url: String(url), method: (init && init.method) || "GET" });
   if (String(url).includes("/tbl6eydRTXlkvykP6")) {
+    if (init && init.method === "DELETE") {
+      return new Response(JSON.stringify({ records: [{ id: "recNEW1", deleted: true }] }), { status: 200 });
+    }
     return new Response(JSON.stringify({ records }), { status: 200 });
   }
   return new Response(JSON.stringify({ error: "unstubbed" }), { status: 500 });
@@ -56,9 +61,14 @@ globalThis.fetch = async (url) => {
 
 const { default: leads } = await import(`file:///${ROOT}/netlify/functions/leads.mjs`);
 
-const res = await leads(new Request("https://aledogolfcarts.com/api/leads", {
-  headers: { "X-Owner-Key": process.env.OWNER_KEY }
-}));
+function ask(method, query, key) {
+  calls = [];
+  const headers = {};
+  if (key !== null) headers["X-Owner-Key"] = key || process.env.OWNER_KEY;
+  return leads(new Request("https://aledogolfcarts.com/api/leads" + (query || ""), { method, headers }));
+}
+
+const res = await ask("GET");
 const body = await res.json();
 
 check("200", res.status === 200, res.status);
@@ -69,6 +79,27 @@ const byId = Object.fromEntries(body.leads.map((l) => [l.id, l]));
 check("new-style lead reads Request Type directly", byId.recNEW1.type === "Service Request", byId.recNEW1.type);
 check("old-style lead's type is sniffed from the [Label] prefix", byId.recOLD1.type === "Cart Inquiry", byId.recOLD1.type);
 check("a lead with neither gets an empty type, not a crash", byId.recANCIENT.type === "", byId.recANCIENT.type);
+
+/* ── deleting a lead ─────────────────────────────────────── */
+console.log("\nDELETE /api/leads");
+
+let r = await ask("DELETE", "", null);
+check("no owner key -> refused, Airtable never contacted", r.status === 401 && calls.length === 0, r.status + " calls=" + calls.length);
+
+r = await ask("DELETE", "?id=not-a-real-id");
+let b = await r.json();
+check("a malformed id is refused", r.status === 400 && calls.length === 0, r.status);
+check("refusal explains why", /valid lead id/i.test(b.message), b.message);
+
+r = await ask("DELETE", "?id=recNEW1");
+b = await r.json();
+check("a real id succeeds", r.status === 200 && b.ok === true, r.status);
+check("the id it deleted is echoed back", b.id === "recNEW1", b.id);
+check("Airtable gets a DELETE, not a POST or PATCH",
+  calls.length === 1 && calls[0].method === "DELETE", calls);
+check("the record id travels as a query param, per Airtable's delete API",
+  calls[0].url.includes("records%5B%5D=recNEW1") || calls[0].url.includes("records[]=recNEW1"),
+  calls[0].url);
 
 console.log(failures ? `\n${failures} FAILED\n` : "\nall passed\n");
 process.exit(failures ? 1 : 0);
