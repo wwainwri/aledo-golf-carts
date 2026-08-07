@@ -146,7 +146,19 @@ async function createAirtableLead(lead) {
    which already required the TCPA checkbox before it would let them
    submit at all. There is no guessing involved, and nothing to
    confirm that the form itself did not already ask. */
-function thankYouMessage() {
+/* These figures are the low end of each range on the service
+   estimator (service.html's .sv-item data-low values / the service
+   FAQ). If that pricing changes, update it here too — nothing wires
+   them together automatically. */
+function serviceThankYouMessage() {
+  return "Thanks for your service request with Aledo Golf Carts! Pricing varies by job: diagnostics from $75, " +
+    "tune-ups from $90, brakes from $120, tires from $350, batteries from $1,200 " +
+    "(full ranges at aledogolfcarts.com/service.html). We also offer $150 pickup & dropoff within 30 miles. " +
+    "We'll follow up shortly. Call or text (817) 207-7044 with questions.";
+}
+
+function thankYouMessage(lead) {
+  if (lead.formType === "service-request") return serviceThankYouMessage();
   return "Thanks for reaching out to Aledo Golf Carts! We got your message and will be in touch soon. " +
     "Need us sooner? Call or text (817) 207-7044.";
 }
@@ -154,7 +166,7 @@ function thankYouMessage() {
 async function sendThankYouText(lead) {
   if (!lead.tcpaConsent || !/^y/i.test(lead.tcpaConsent)) return "skipped: no consent";
   if (!lead.phone) return "skipped: no phone number";
-  await sendQuoText(thankYouMessage(), lead.phone);
+  await sendQuoText(thankYouMessage(lead), lead.phone);
   return "sent";
 }
 

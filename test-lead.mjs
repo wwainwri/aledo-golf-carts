@@ -160,6 +160,24 @@ check("lead still stored", consented.res.status === 200);
 check("text sent", consented.steps.thankYouText === "sent", consented.steps.thankYouText);
 check("sent to the lead's own number", consented.quo && consented.quo.to[0] === "+18175550177", JSON.stringify(consented.quo));
 check("message references the callback number", consented.quo && consented.quo.content.includes("(817) 207-7044"), consented.quo && consented.quo.content);
+check("non-service thank-you doesn't mention service pricing", consented.quo && !consented.quo.content.includes("diagnostics"), consented.quo && consented.quo.content);
+
+const serviceLead = await post({
+  formType: "service-request",
+  name: "Casey Park",
+  email: "casey@example.com",
+  phone: "817-555-0166",
+  make: "Club Car",
+  model: "Onward",
+  description: "Batteries won't hold a charge.",
+  tcpa_consent: "Yes"
+});
+check("service lead still stored", serviceLead.res.status === 200);
+check("service text sent", serviceLead.steps.thankYouText === "sent", serviceLead.steps.thankYouText);
+check("service text mentions pricing", serviceLead.quo && serviceLead.quo.content.includes("diagnostics from $75"), serviceLead.quo && serviceLead.quo.content);
+check("service text mentions the transportation fee", serviceLead.quo && serviceLead.quo.content.includes("$150 pickup & dropoff within 30 miles"), serviceLead.quo && serviceLead.quo.content);
+check("service text still has the callback number", serviceLead.quo && serviceLead.quo.content.includes("(817) 207-7044"), serviceLead.quo && serviceLead.quo.content);
+check("service text stays reasonably concise", serviceLead.quo && serviceLead.quo.content.length <= 400, serviceLead.quo && serviceLead.quo.content.length);
 
 const noConsent = await post({
   formType: "cart-inquiry",
