@@ -54,7 +54,17 @@ function AGCCartFromApi(r) {
     seats: r.seats || '',
     battery: r.battery || '',
     color: r.color || '',
+    /* Two lengths of the same idea, and both have to survive this
+       mapper. `description` is short-preferring — it is what the
+       listing grid and the homepage cards draw. `longDescription` is
+       long-preferring and only the cart's own page reads it.
+
+       Leaving longDescription out here does not break loudly: the cart
+       page falls back to `description` and quietly shows the short
+       blurb on the one page that was supposed to show the full
+       write-up. Both keys stay, together, for that reason. */
     description: r.description || '',
+    longDescription: r.longDescription || '',
     photos: photos,
     status: r.status === 'pending' || r.status === 'sold' ? r.status : 'available',
     featured: r.featured === true
