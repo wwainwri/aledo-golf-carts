@@ -11,9 +11,18 @@
    means no email vendor to own, and it still fires if a lead is
    ever added by hand.
 
+   The moment a lead is recorded, this also texts whoever submitted
+   the form a quick thank-you — see sendThankYouText below for why
+   that is safe to do automatically here when it was deliberately kept
+   as a dashboard-side confirm for the "cart sold" flow.
+
    Environment variables (Netlify → Site configuration):
      AIRTABLE_TOKEN   read + write on the Aledo base
+     QUO_API_KEY      lets the thank-you text send; a lead is still
+                      recorded fine without it — see sendThankYouText
    ═══════════════════════════════════════════════════════════ */
+
+import { sendQuoText } from "../lib/quo-send.mjs";
 
 export const config = { path: "/api/lead" };
 
@@ -128,6 +137,27 @@ async function createAirtableLead(lead) {
   return "created";
 }
 
+/* ─────────────────────── THANK-YOU TEXT ─────────────────────── */
+
+/* Unlike the dashboard's "cart sold" text — which is always a
+   dashboard-side confirm, never automatic — this one is safe to fire
+   the instant a lead lands: the phone number and the consent both
+   come from the same place, the form the person just submitted,
+   which already required the TCPA checkbox before it would let them
+   submit at all. There is no guessing involved, and nothing to
+   confirm that the form itself did not already ask. */
+function thankYouMessage() {
+  return "Thanks for reaching out to Aledo Golf Carts! We got your message and will be in touch soon. " +
+    "Need us sooner? Call or text (817) 207-7044.";
+}
+
+async function sendThankYouText(lead) {
+  if (!lead.tcpaConsent || !/^y/i.test(lead.tcpaConsent)) return "skipped: no consent";
+  if (!lead.phone) return "skipped: no phone number";
+  await sendQuoText(thankYouMessage(), lead.phone);
+  return "sent";
+}
+
 /* ───────────────────────── HANDLER ───────────────────────── */
 
 /** Runs fn(), turning a thrown error into a readable status string. */
@@ -179,6 +209,9 @@ export default async function handler(request) {
 
   const steps = {};
   steps.airtable = await safely(() => createAirtableLead(lead));
+  /* Never gates on this — a lead is stored fine even if the text
+     fails or Quo isn't configured yet. */
+  steps.thankYouText = await safely(() => sendThankYouText(lead));
 
   const stored = !String(steps.airtable).startsWith("error");
   return json({ ok: stored, steps }, stored ? 200 : 502);

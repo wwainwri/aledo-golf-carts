@@ -23,8 +23,8 @@
 (function () {
   'use strict';
 
-  var PHONE = '(817) 776-2175';
-  var PHONE_HREF = 'tel:+18177762175';
+  var PHONE = '(817) 207-7044';
+  var PHONE_HREF = 'tel:+18172077044';
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {

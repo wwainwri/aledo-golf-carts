@@ -4,7 +4,15 @@ const ROOT = "C:/Users/willi/OneDrive/Documents/Claude Code/AGC/Aledo Golf Carts
 process.env.AIRTABLE_TOKEN = "test-token";
 
 let captured = null;
+let capturedQuo = null;
 globalThis.fetch = async (url, init) => {
+  if (String(url).includes("api.quo.com/v1/phone-numbers")) {
+    return new Response(JSON.stringify({ data: [{ number: "+18172077044" }] }), { status: 200 });
+  }
+  if (String(url).includes("api.quo.com/v1/messages")) {
+    capturedQuo = JSON.parse(init.body);
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  }
   captured = JSON.parse(init.body);
   return new Response(JSON.stringify({ records: [{ id: "recTEST" }] }), { status: 200 });
 };
@@ -20,11 +28,13 @@ const check = (name, cond, detail) => {
 
 async function post(body) {
   captured = null;
+  capturedQuo = null;
   const res = await lead(new Request("https://aledogolfcarts.com/api/lead", {
     method: "POST",
     body: JSON.stringify(body)
   }));
-  return { res, fields: captured && captured.records[0].fields };
+  const payload = await res.json();
+  return { res, fields: captured && captured.records[0].fields, steps: payload.steps, quo: capturedQuo };
 }
 
 /* ── a full service request, as service.html sends it ── */
@@ -133,6 +143,74 @@ const noContact = await post({ formType: "service-request", name: "Nobody", desc
 check("no email or phone → 400", noContact.res.status === 400, `got ${noContact.res.status}`);
 const bot = await post({ formType: "service-request", "bot-field": "spam", name: "Bot", email: "b@x.com" });
 check("honeypot silently dropped", bot.res.status === 200 && bot.fields === null);
+
+/* ── thank-you text ── */
+console.log("\nthank-you text");
+process.env.QUO_API_KEY = "test-quo-key";
+
+const consented = await post({
+  formType: "cart-inquiry",
+  name: "Robin Cole",
+  email: "robin@example.com",
+  phone: "817-555-0177",
+  cart: "2024 Yamaha Drive2",
+  tcpa_consent: "Yes"
+});
+check("lead still stored", consented.res.status === 200);
+check("text sent", consented.steps.thankYouText === "sent", consented.steps.thankYouText);
+check("sent to the lead's own number", consented.quo && consented.quo.to[0] === "+18175550177", JSON.stringify(consented.quo));
+check("message references the callback number", consented.quo && consented.quo.content.includes("(817) 207-7044"), consented.quo && consented.quo.content);
+
+const noConsent = await post({
+  formType: "cart-inquiry",
+  name: "No Consent",
+  email: "noconsent@example.com",
+  phone: "817-555-0188",
+  cart: "2024 Yamaha Drive2",
+  tcpa_consent: "No"
+});
+check("skipped without consent", noConsent.steps.thankYouText === "skipped: no consent", noConsent.steps.thankYouText);
+check("no text sent without consent", noConsent.quo === null);
+check("lead still stored without consent", noConsent.res.status === 200);
+
+const noPhone = await post({
+  formType: "cart-inquiry",
+  name: "No Phone",
+  email: "nophone@example.com",
+  cart: "2024 Yamaha Drive2",
+  tcpa_consent: "Yes"
+});
+check("skipped without a phone number", noPhone.steps.thankYouText === "skipped: no phone number", noPhone.steps.thankYouText);
+
+/* Quo throwing must never take the lead down with it. */
+const quoDown = globalThis.fetch;
+globalThis.fetch = async (url, init) => {
+  if (String(url).includes("api.quo.com")) throw new Error("network down");
+  return quoDown(url, init);
+};
+const resilient = await post({
+  formType: "cart-inquiry",
+  name: "Resilient Lead",
+  email: "resilient@example.com",
+  phone: "817-555-0199",
+  cart: "2024 Yamaha Drive2",
+  tcpa_consent: "Yes"
+});
+check("lead still stored even when Quo throws", resilient.res.status === 200, `got ${resilient.res.status}`);
+check("thank-you step reports the error instead of throwing", String(resilient.steps.thankYouText).startsWith("error:"), resilient.steps.thankYouText);
+globalThis.fetch = quoDown;
+
+delete process.env.QUO_API_KEY;
+const notConfigured = await post({
+  formType: "cart-inquiry",
+  name: "Unconfigured",
+  email: "unconfigured@example.com",
+  phone: "817-555-0111",
+  cart: "2024 Yamaha Drive2",
+  tcpa_consent: "Yes"
+});
+check("lead still stored when Quo isn't configured", notConfigured.res.status === 200);
+check("thank-you step reports not configured, doesn't crash", String(notConfigured.steps.thankYouText).startsWith("error:"), notConfigured.steps.thankYouText);
 
 console.log(failures ? `\n${failures} FAILED\n` : "\nall passed\n");
 process.exit(failures ? 1 : 0);
