@@ -272,6 +272,25 @@ section { padding: 5.5rem 5vw; }
 }
 .dealer-chip img { height: 22px; opacity: 1; }
 
+/* GTW's real logo has "GTW" lettering baked into the artwork, but it's
+   too small a fraction of the source image to survive scaling down to
+   the strip's 30px logo height. Pairing the icon with real DOM text
+   keeps it legible at any size instead of relying on shrunk raster
+   text. */
+.dealer-lockup {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.dealer-lockup b {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dealer-track { animation: none; }
   .dealer-marquee { overflow-x: auto; }
