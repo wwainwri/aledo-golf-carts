@@ -98,6 +98,16 @@ export async function airtable(method, path, body) {
     body: body ? JSON.stringify(body) : undefined
   });
 
-  if (!response.ok) throw new Error(`Airtable responded ${response.status}`);
+  if (!response.ok) {
+    /* The status rides along so a caller can tell apart the failures
+       that mean different things — a 404 from a table that was never
+       created needs setup instructions, not the "Airtable is down"
+       message every other status deserves. Existing callers only read
+       .message, so this is additive. */
+    const error = new Error(`Airtable responded ${response.status}`);
+    error.status = response.status;
+    try { error.body = await response.json(); } catch { /* not JSON */ }
+    throw error;
+  }
   return response.json();
 }
