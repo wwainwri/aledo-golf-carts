@@ -34,8 +34,11 @@ const records = [
   }
 ];
 
-/* Flipped per-test to exercise the missing-table path. */
+/* Flipped per-test to exercise the missing-table path. `missingStatus`
+   picks which way Airtable refuses: 404 for a base-scoped token, 403
+   for one scoped to named tables. Both mean the same thing to us. */
 let tableExists = true;
+let missingStatus = 404;
 let calls = [];
 
 globalThis.fetch = async (url, init) => {
@@ -46,7 +49,10 @@ globalThis.fetch = async (url, init) => {
     return new Response(JSON.stringify({ error: "unstubbed" }), { status: 500 });
   }
   if (!tableExists) {
-    return new Response(JSON.stringify({ error: { type: "TABLE_NOT_FOUND" } }), { status: 404 });
+    return new Response(
+      JSON.stringify({ error: { type: missingStatus === 403 ? "NOT_AUTHORIZED" : "TABLE_NOT_FOUND" } }),
+      { status: missingStatus }
+    );
   }
   if (method === "GET") return new Response(JSON.stringify({ records }), { status: 200 });
   if (method === "DELETE") return new Response(JSON.stringify({ records: [{ id: "recSOON", deleted: true }] }), { status: 200 });
@@ -195,6 +201,9 @@ r = await ask("POST", { body: { title: "Anything", date: "2026-08-14" } });
 b = await r.json();
 check("creating says setup_required too", b.error === "setup_required", b.error);
 
+check("the reply names what Airtable actually said, so a scope problem is not mislabelled",
+  b.airtableSaid === "TABLE_NOT_FOUND", b.airtableSaid);
+
 /* A 404 on a request that carried a record id means that record is
    gone, not that the table is missing — those must not be conflated. */
 r = await ask("DELETE", { query: "?id=recGONE" });
@@ -202,6 +211,16 @@ b = await r.json();
 check("a 404 on a real record id is an upstream error, not setup advice",
   r.status === 502 && b.error === "upstream_error", r.status + " " + b.error);
 
+/* A token scoped to named tables reports a table it cannot see as 403,
+   not 404. Same situation for the owner, so it must read the same. */
+missingStatus = 403;
+r = await ask("GET");
+b = await r.json();
+check("a 403 on the table is treated as setup_required too", b.error === "setup_required", b.error);
+check("and says so was a permissions answer", b.airtableSaid === "NOT_AUTHORIZED", b.airtableSaid);
+check("the message mentions checking the token's access", /AIRTABLE_TOKEN/.test(b.message), b.message);
+
+missingStatus = 404;
 tableExists = true;
 
 /* ── method guard ─────────────────────────────────────────── */

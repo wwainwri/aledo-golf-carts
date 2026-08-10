@@ -150,23 +150,38 @@ async function listAppointments() {
   return out.slice(0, MAX);
 }
 
-/* Airtable says 404 both for "no such table" and for "no such record".
-   The difference matters: one needs setup instructions, the other is
-   an id that no longer exists. A record id is only ever in play when
-   we sent one, so the caller tells us which case it is in. */
+/* Airtable says 404 both for "no such table" and for "no such record",
+   and says 403 when the token cannot see the table at all — which is
+   what a base-scoped PAT reports for a table that does not exist, and
+   also what any PAT reports for a table outside its scope.
+
+   From here those are one situation: the Appointments table is not
+   reachable, and the owner has a setup step to do. The distinction that
+   does matter is whether we sent a record id — if we did, the table was
+   clearly fine a moment ago and this is a stale id, not a missing table. */
 function isMissingTable(error, sentRecordId) {
-  return error.status === 404 && !sentRecordId;
+  return (error.status === 404 || error.status === 403) && !sentRecordId;
 }
 
-function setupReply() {
+function setupReply(error) {
+  /* Airtable's own wording, when it gave any, so a scope problem is
+     not silently reported as a missing table. */
+  const detail = error && error.body && error.body.error;
+  const airtableSaid = typeof detail === "string" ? detail : (detail && detail.type) || "";
+
   return json({
     ok: false,
     error: "setup_required",
+    airtableStatus: error ? error.status : 0,
+    airtableSaid,
     message:
-      "No Appointments table found in Airtable yet. Create a table named " +
-      "\"Appointments\" with these fields: Title (text), Date (date), Time (text), " +
-      "Type (single select), Customer (text), Phone (text), Cart (text), " +
-      "Notes (long text), Status (single select), Lead ID (text)."
+      "Could not reach an Appointments table in Airtable" +
+      (airtableSaid ? " (Airtable said " + airtableSaid + ")" : "") +
+      ". Create a table named exactly \"Appointments\" in the same base, with these " +
+      "fields: Title (text), Date (date), Time (text), Type (single select), " +
+      "Customer (text), Phone (text), Cart (text), Notes (long text), " +
+      "Status (single select), Lead ID (text). If it already exists, check that " +
+      "AIRTABLE_TOKEN's access covers the whole base rather than named tables only."
   }, 200);
 }
 
@@ -249,11 +264,18 @@ export default async function handler(request) {
       error: "GET to list, POST to add, PATCH to change one, DELETE to remove one."
     }, 405);
   } catch (error) {
-    if (isMissingTable(error, sentRecordId)) return setupReply();
+    if (isMissingTable(error, sentRecordId)) return setupReply(error);
+
+    /* Whatever Airtable actually said, rather than a bare status — a
+       calendar that will not load should say why on its own. */
+    const detail = error.body && error.body.error;
+    const airtableSaid = typeof detail === "string" ? detail : (detail && (detail.message || detail.type)) || "";
+
     return json({
       ok: false,
       error: "upstream_error",
-      message: error.message || "Could not reach Airtable."
+      message: (error.message || "Could not reach Airtable.") +
+        (airtableSaid ? " — Airtable said: " + airtableSaid : "")
     }, 502);
   }
 }
