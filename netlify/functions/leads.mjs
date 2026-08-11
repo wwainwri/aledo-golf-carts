@@ -31,7 +31,22 @@ const LEADS_TABLE = process.env.AIRTABLE_LEADS_TABLE || "tbl6eydRTXlkvykP6";
 
 /* The only status values the dashboard may set. Anything else is a
    typo or someone poking at the endpoint. */
-const STATUSES = ["New", "Contacted", "Qualified", "Unqualified", "Converted"];
+/* Where the customer is. Plain shop language rather than CRM words:
+   "Quoted" is the state worth having that the old list lacked — you
+   have given them a number and are waiting, which is a different thing
+   from having merely rung them, and it is when a lead is most worth
+   chasing. */
+const STATUSES = ["New", "Contacted", "Quoted", "Sold", "Lost"];
+
+/* The words this list used before. Still accepted on write, and still
+   sent to the dashboard, because leads recorded under them are real and
+   renaming a dropdown must not make an existing record unwritable or
+   quietly reassign what somebody decided months ago. */
+const LEGACY_STATUSES = ["Qualified", "Unqualified", "Converted"];
+
+/* Anything that means "no longer waiting on us", old words included.
+   The leads inbox and the Today page both need this to agree. */
+const CLOSED_STATUSES = ["Sold", "Lost", "Converted", "Unqualified"];
 
 /* Where a repair actually is, which the sales pipeline above cannot
    say — "Qualified" tells you nothing about a cart sitting in the shop.
@@ -131,6 +146,8 @@ export default async function handler(request) {
       return json({
         ok: true, leads, count: leads.length, open,
         statuses: STATUSES,
+        legacyStatuses: LEGACY_STATUSES,
+        closedStatuses: CLOSED_STATUSES,
         serviceStatuses: SERVICE_STATUSES
       }, 200);
     }
@@ -155,7 +172,10 @@ export default async function handler(request) {
       const fields = {};
 
       if (input.status !== undefined) {
-        const status = STATUSES.find((s) => s.toLowerCase() === str(input.status).toLowerCase());
+        /* Legacy words are accepted so a lead still carrying one can be
+           saved without being forced onto a new value first. */
+        const status = STATUSES.concat(LEGACY_STATUSES)
+          .find((s) => s.toLowerCase() === str(input.status).toLowerCase());
         if (!status) {
           return json({
             ok: false,

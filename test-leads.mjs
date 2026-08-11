@@ -99,8 +99,15 @@ check("old-style lead's type is sniffed from the [Label] prefix", byId.recOLD1.t
 check("a lead with neither gets an empty type, not a crash", byId.recANCIENT.type === "", byId.recANCIENT.type);
 
 check("the status lists ship with the data so the dropdown cannot drift",
-  body.serviceStatuses.includes("Waiting on parts") && body.statuses.includes("Converted"),
-  JSON.stringify(body.serviceStatuses));
+  body.serviceStatuses.includes("Waiting on parts") && body.statuses.includes("Quoted"),
+  JSON.stringify(body.statuses));
+check("the sales list is the new plain-language one",
+  body.statuses.join(",") === "New,Contacted,Quoted,Sold,Lost", body.statuses.join(","));
+check("the words it used before are sent too, so old leads can be shown",
+  body.legacyStatuses.join(",") === "Qualified,Unqualified,Converted", body.legacyStatuses);
+check("closed statuses cover both vocabularies",
+  ["Sold", "Lost", "Converted", "Unqualified"].every((s) => body.closedStatuses.includes(s)),
+  body.closedStatuses);
 check("service status and notes read back, empty when the columns are absent",
   byId.recNEW1.serviceStatus === "" && byId.recNEW1.notes === "",
   byId.recNEW1.serviceStatus + "/" + byId.recNEW1.notes);
@@ -152,6 +159,23 @@ check("a patch that changes nothing is refused", r2.status === 400 && /nothing t
 
 r2 = await patch({ id: "recNEW1", status: "Napping" });
 check("a bad sales status is still refused", r2.status === 400, r2.status);
+
+r2 = await patch({ id: "recNEW1", status: "Quoted" });
+check("the new Quoted status is accepted",
+  r2.status === 200 && calls[0].body.records[0].fields.Status === "Quoted",
+  calls[0] && JSON.stringify(calls[0].body.records[0].fields));
+
+/* Renaming the dropdown must not make a lead recorded under an old
+   word unsavable — that lead is real and nobody asked to reassign it. */
+r2 = await patch({ id: "recNEW1", status: "Converted" });
+check("a legacy status is still accepted on write",
+  r2.status === 200 && calls[0].body.records[0].fields.Status === "Converted",
+  r2.status);
+
+r2 = await patch({ id: "recNEW1", status: "unqualified" });
+check("legacy matching ignores case too",
+  calls[0].body.records[0].fields.Status === "Unqualified",
+  calls[0].body.records[0].fields.Status);
 
 /* The two new columns are the owner's to add. Until they do, saying so
    beats a blank failure about a field they have never heard of. */
