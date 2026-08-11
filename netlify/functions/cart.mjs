@@ -132,8 +132,34 @@ export default async function handler(request) {
   const denied = checkOwner(request);
   if (denied) return denied;
 
+  /* ── Deleting a cart ──
+     The row goes, and with it the price it sold for and everything else
+     that row was the only record of. The dashboard is what stands
+     between a stray click and that, so it asks first and points Sold
+     carts at Hide instead. Nothing here can put one back. */
+  if (request.method === "DELETE") {
+    const id = String(new URL(request.url).searchParams.get("id") || "").trim();
+    if (!/^rec[A-Za-z0-9]+$/.test(id)) {
+      return json({ ok: false, error: "invalid", message: "A valid record id is required." }, 400);
+    }
+
+    try {
+      await airtableFetch("DELETE", `${BASE_ID}/${TABLE_ID}?records[]=${encodeURIComponent(id)}`);
+      return json({ ok: true, id, action: "deleted" }, 200);
+    } catch (error) {
+      return json({
+        ok: false,
+        error: "upstream_error",
+        message: error.message || "Airtable would not delete that cart."
+      }, 502);
+    }
+  }
+
   if (request.method !== "PATCH" && request.method !== "POST") {
-    return json({ ok: false, error: "PATCH to edit a cart, POST to add one." }, 405);
+    return json({
+      ok: false,
+      error: "PATCH to edit a cart, POST to add one, DELETE to remove one."
+    }, 405);
   }
 
   let input;
